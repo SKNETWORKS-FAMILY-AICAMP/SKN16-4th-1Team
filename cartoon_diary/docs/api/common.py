@@ -43,21 +43,32 @@ def issue_token(user_id: str, token_type: str) -> str:
 
 
 def get_current_user(creds: Optional[HTTPAuthorizationCredentials] = Depends(bearer)) -> dict:
-    if not creds or creds.scheme.lower() != "bearer":
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Missing bearer token")
-    token = creds.credentials
-    try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALG])
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token expired")
-    except jwt.InvalidTokenError:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
-    if payload.get("type") != "access":
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type")
-    user_id = payload.get("sub")
-    user = store["users"].get(user_id)
+    """Auth 제거 버전: 토큰 없이도 기본 사용자(anonymous)를 반환.
+
+    기존 JWT 검증 대신, 최초 호출 시 기본 사용자(guest)를 생성해 사용합니다.
+    """
+    # Ensure an anonymous default user exists
+    anon_id = "anon"
+    user = store["users"].get(anon_id)
     if not user:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
+        user = {
+            "id": anon_id,
+            "username": "guest",
+            "email": "guest@example.com",
+            "password_hash": pwd_ctx.hash("guest"),
+            "created_at": now(),
+            "last_login": now(),
+            "email_verified": True,
+        }
+        store["users"][anon_id] = user
+        store["users_by_email"][user["email"].lower()] = user
+        store["profiles"][anon_id] = {
+            "display_name": "Guest",
+            "avatar_url": None,
+            "preferences": {},
+            "email": user["email"],
+            "username": user["username"],
+        }
     return user
 
 
@@ -235,4 +246,3 @@ class TaskOut(BaseModel):
     error_message: Optional[str] = None
     created_at: datetime
     finished_at: Optional[datetime] = None
-

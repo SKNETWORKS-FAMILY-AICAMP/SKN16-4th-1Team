@@ -89,47 +89,80 @@
 6) 캘린더 UI에 썸네일 노출
 
 ## 10. 데이터 모델(초안)
-- **User** (id, email, password_hash, created_at, last_login)
-- **Profile** (id, user_id FK, nickname, avatar_url, timezone)
-- **DiaryEntry** (id, user_id FK, date, title?, content, mood?, tags?, created_at, updated_at)
-- **Prompt** (id, diary_entry_id FK, body_text, model, params_json, created_at)
-- **Cartoon** (id, diary_entry_id FK, status[queued|running|succeeded|failed], seed?, guidance?, grid_url?, fail_reason?, version, created_at, completed_at)
-- **CartoonPanel** (id, cartoon_id FK, index(1-4), image_url, caption?)
-- **Task** (id, diary_id FK, type[GENERATE|REROLL], status[queued|running|succeeded|failed], progress, worker_logs, error_message?, created_at, finished_at)
+
+- **User**  
+  (id, email, password_hash, created_at, last_login)
+
+- **Profile**  
+  (id, user_id FK, nickname, avatar_url, timezone)
+
+- **DiaryEntry**  
+  (id, user_id FK, date, title?, content, mood?, tags?, created_at, updated_at)
+
+- **Prompt**  
+  (id, diary_entry_id FK, body_text, model, params_json, created_at)
+
+- **Cartoon**  
+  (id, diary_entry_id FK, status[queued|running|succeeded|failed], seed?, guidance?, grid_url?, fail_reason?, version, created_at, completed_at)
+
+- **CartoonPanel**  
+  (id, cartoon_id FK, index(1-4), image_url, caption?)
+
+- **Task**  
+  (id, diary_id FK, type[GENERATE|REROLL], status[queued|running|succeeded|failed], progress, worker_logs, error_message?, created_at, finished_at)
+
+### 인덱스 / 제약
+- DiaryEntry: (user_id, date) unique  
+- Cartoon: diary_entry_id unique (재생성 시 version 필드로 다중 허용)
+
 
 ### 인덱스 / 제약
 - DiaryEntry: (user_id, date) unique  
 - Cartoon: diary_entry_id unique (재생성 시 version 필드로 다중 허용)
 
 ## 11. API (예시, 서버 내부용 포함) -> (인증: 🔒 = JWT 필요, 🟢 = 공개 , ★ = 추후 삭제 여부있음)
-   11.1 Auth
-      POST /api/auth/signup — 회원가입 (username, email, password)
-      POST /api/auth/login — 로그인 → { access, refresh, user }
-      POST /api/auth/refresh — access 재발급 { refresh } → { access }
-      POST /api/auth/verify-email/request 🟢 — 이메일 인증 메일 발송 { email }
-      POST /api/auth/verify-email/confirm 🟢 — 인증 완료 { token }
-      POST /api/auth/password/forgot 🟢 — 비번 초기화 메일 발송 { email }
-      POST /api/auth/password/reset 🟢 — 비번 변경 { token, new_password }
-   11.2 Bootstrap
+11. API (예시, 서버 내부용 포함) -> (인증: 🔒 = JWT 필요, 🟢 = 공개 , ★ = 추후 삭제 여부있음)
+
+   11.1 Bootstrap
+
       GET /api/bootstrap 🔒 — 메인 초기화(내정보 요약, 알림카운트, 플래그, 배너 헤드, 링크)
-   11.3 Profile
+
+   11.2 Profile
+
       GET /api/profile/me 🔒 — 내 프로필 조회
+
       PUT /api/profile/me 🔒 — 내 프로필 수정 { display_name, avatar_url, preferences }   
-   11.4 Diaries (일기)
+
+   11.3 Diaries (일기)
+
       POST /api/diaries 🔒 — 일기 작성 { date, title, content }
+
       GET /api/diaries 🔒 — 월별 목록
+
       쿼리: month=YYYY-MM(필수), cursor, limit(≤50)
+
       GET /api/diaries/{id} 🔒 — 일기 상세
+
       PUT /api/diaries/{id} 🔒 — 일기 수정 { title?, content? }
+
       DELETE /api/diaries/{id} 🔒 — 일기 삭제
-   11.5 Cartoons (생성/재생성/상태)
+
+   11.4 Cartoons (생성/재생성/상태)
+
       POST /api/diaries/{id}/generate 🔒 — 생성 트리거
+
       바디: {style(1,2,3), panels, language } → 202 { task_id, status:"queued" }
+
       GET /api/cartoons/{diary_id} 🔒 — 상태/결과 조회
+
       응답: { status, panels:[{index,image_url,caption}], meta }
+
       POST /api/cartoons/{diary_id}/reroll 🔒 — 재생성
+
       바디: {★style, variation_seed, keep_layout } → 202 { task_id }
+
    ★11.5 Tasks
+
       GET /api/tasks/{task_id} 🔒 — 작업 상태 폴링  
       응답: { id, diary_id, type, status, progress, worker_logs, error_message, created_at, finished_at }
 
