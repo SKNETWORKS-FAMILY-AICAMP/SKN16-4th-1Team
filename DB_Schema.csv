@@ -1,0 +1,9 @@
+﻿테이블 설명,작성된 일기 데이터 관리 테이블,Unnamed: 2,Unnamed: 3,Unnamed: 4
+순번,필드명,타입,크기,설명
+1,seq_id,INTEGER,자동 증가 (AUTOINCREMENT),"자동 번호 (PK = Primary Key, 고유 ID)"
+2,user_id,INTEGER,최대 8바이트 정수 (BIGINT 가능),내부용 유저 식별자 (다른 테이블에서 연결할 때 FK로 씀)
+3,email,TEXT (또는 VARCHAR),최대 254자 권장,로그인용 이메일
+4,password_hash,TEXT,보통 60~128자,암호화된 비밀번호
+5,nickname,TEXT (또는 VARCHAR),보통 50~100자,닉네임
+6,avatar_url,TEXT,255~500자,프로필 이미지 주소
+7,created_at,DATETIME,YYYY-MM-DD HH:MM:SS,가입 시각
