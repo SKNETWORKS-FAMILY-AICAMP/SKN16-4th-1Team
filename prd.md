@@ -90,14 +90,33 @@
 
 ## 10. 데이터 모델(초안)
 
+1. user table
+| 컬럼              | 타입           | 설명            |
+| --------------- | ------------ | ------------- |
+| `seq_id`        | SERIAL / INT | PK, 자동 증가     |
+| `user_id`       | VARCHAR      | FK 가능, 내부 식별자 |
+| `email`         | VARCHAR      | 로그인 ID        |
+| `password_hash` | VARCHAR      | 비밀번호 해시       |
+| `nickname`      | VARCHAR      | 프로필 이름        |
+| `avatar_url`    | VARCHAR      | 프로필 이미지 URL   |
+| `created_at`    | TIMESTAMP    | 계정 생성 시각      |
+
+
+2. diary table
+| 컬럼           | 타입            | 설명                                      |
+| ------------ | ------------- | --------------------------------------- |
+| `diary_id`   | SERIAL / INT  | PK, 자동 증가                               |
+| `user_id`    | INT / VARCHAR | FK, 작성자(User) 참조                        |
+| `content`    | TEXT          | 실제 일기 내용                                |
+| `date`       | DATE          | 사용자가 선택한 날짜                             |
+| `theme`      | VARCHAR       | 선택한 테마("Theme 1", "Theme 2", "Theme 3") |
+| `image_url`  | VARCHAR       | 생성한 카툰 이미지 URL (선택적)                    |
+| `created_at` | TIMESTAMP     | 작성 시각                                   |
+| `updated_at` | TIMESTAMP     | 수정 시각                                   |
+| `status`     | VARCHAR       | 삭제/공개 여부 관리 (예: 'active', 'deleted')    |
+
 - **User**  
-  (id, email, password_hash, created_at, last_login)
-
-- **Profile**  
-  (id, user_id FK, nickname, avatar_url, timezone)
-
-- **DiaryEntry**  
-  (id, user_id FK, date, title?, content, mood?, tags?, created_at, updated_at)
+(seq_id, user_id FK, email, password_hash, created_at,nickname, avatar_url)
 
 - **Prompt**  
   (id, diary_entry_id FK, body_text, model, params_json, created_at)
@@ -110,6 +129,8 @@
 
 - **Task**  
   (id, diary_id FK, type[GENERATE|REROLL], status[queued|running|succeeded|failed], progress, worker_logs, error_message?, created_at, finished_at)
+
+
 
 ### 인덱스 / 제약
 - DiaryEntry: (user_id, date) unique  
