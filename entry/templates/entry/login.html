@@ -1,0 +1,36 @@
+{% extends 'entry/base_auth.html' %}
+{% load static %}
+
+{% block title %}로그인{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-wrapper">
+        <div class="auth-title">
+            <h1>네컷일기</h1>
+        </div>
+        <div class="tab-menu">
+            <a href="#" class="tab-item active">로그인</a> {# {% url 'login' %} #}
+            <a href="#" class="tab-item">회원가입</a> {# {% url 'signup' %} #}
+        </div>
+        <form id="login-form" method="post">
+            {% csrf_token %}
+            <div class="input-group">
+                <i data-lucide="mail"></i>
+                <input type="email" id="email" name="email" placeholder="아이디(이메일)">
+                <button type="button" class="btn-clear" id="clear-email">&times;</button>
+            </div>
+            <p class="error-message" id="email-error"></p>
+            <div class="input-group">
+                <i data-lucide="lock"></i>
+                <input type="password" id="password" name="password" placeholder="비밀번호">
+                <button type="button" class="btn-toggle-password" id="toggle-password">
+                    <i data-lucide="eye"></i>
+                </button>
+            </div>
+            <p class="error-message" id="password-error"></p>
+            <button type="submit" class="btn-submit">로그인</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

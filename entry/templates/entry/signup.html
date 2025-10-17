@@ -1,0 +1,49 @@
+{% extends 'entry/base_auth.html' %}
+{% load static %}
+
+{% block title %}회원가입{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-wrapper">
+        <div class="auth-title">
+            <h1>네컷일기</h1>
+        </div>
+        <div class="tab-menu">
+            <a href="#" class="tab-item">로그인</a> {# {% url 'login' %} #}
+            <a href="#" class="tab-item active">회원가입</a> {# {% url 'signup' %} #}
+        </div>
+        <form id="signup-form" method="post">
+            {% csrf_token %}
+            <div class="input-group">
+                <i data-lucide="mail"></i>
+                <input type="email" id="signup-email" name="email" placeholder="아이디(이메일)">
+                <button type="button" class="btn-action" id="check-email-btn">중복확인</button>
+            </div>
+            <p class="error-message" id="signup-email-error"></p>
+            <div class="input-group">
+                <i data-lucide="lock"></i>
+                <input type="password" id="signup-password" name="password" placeholder="비밀번호">
+            </div>
+            <div id="password-conditions" class="conditions-box">
+                <p data-condition="length">✓ 8~20자</p>
+                <p data-condition="combination">✓ 영문/숫자/특수문자 중 2가지 이상 조합</p>
+                <p data-condition="noKorean">✓ 한글 사용 불가</p>
+                <p data-condition="consecutive">✓ 3개 이상 연속/동일한 문자/숫자 제외</p>
+                <p data-condition="includesEmail">✓ 아이디(이메일) 제외</p>
+            </div>
+            <div class="input-group">
+                <i data-lucide="lock"></i>
+                <input type="password" id="signup-password-confirm" name="password_confirm" placeholder="비밀번호 확인">
+            </div>
+            <p class="error-message" id="signup-password-confirm-error">확인을 위해 비밀번호를 다시 입력해주세요.</p>
+            <div class="input-group">
+                <i data-lucide="user"></i>
+                <input type="text" id="signup-nickname" name="nickname" placeholder="이름(닉네임)">
+            </div>
+            <p class="error-message" id="signup-nickname-error"></p>
+            <button type="submit" class="btn-submit">회원가입</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
