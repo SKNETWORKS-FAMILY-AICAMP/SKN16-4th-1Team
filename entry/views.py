@@ -8,6 +8,8 @@ from .models import DiaryModel
 
 from django.contrib.auth.models import User
 from django.contrib.auth import login, logout
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
 
 
 def entry(request):
@@ -144,19 +146,32 @@ def generate_image(request, diary_id):
 
 def login_view(request):
     if request.method == 'POST':
-        email_from_form = request.POST.get('username')
-        password_from_form = request.POST.get('password')
-        
-        try:
-            user_obj = User.objects.get(email=email_from_form)
+        email = request.POST.get('username')
+        password = request.POST.get('password')
+
+        if not email:
+            return render(request, 'entry/login.html', {'id_error': '아이디를 입력해주세요.'})
             
-            if user_obj.check_password(password_from_form):
+        try:
+            validate_email(email)
+        except ValidationError:
+            return render(request, 'entry/login.html', {'id_error': '이메일 형식으로 입력해주세요.'})
+
+        if not password:
+            return render(request, 'entry/login.html', {'password_error': '비밀번호를 입력해주세요.'})
+
+        try:
+            user_obj = User.objects.get(email=email)
+            
+            if user_obj.check_password(password):
                 login(request, user_obj)
                 return redirect('entry')
             else:
-                return render(request, 'entry/login.html', {'error': '비밀번호를 잘못 입력했습니다.'})
+                return render(request, 'entry/login.html', {'password_error': '잘못된 비밀번호입니다.'})
+
         except User.DoesNotExist:
-            return render(request, 'entry/login.html', {'error': '존재하지 않는 아이디(이메일)입니다.'})
+            return render(request, 'entry/login.html', {'id_error': '등록되지 않았거나 잘못된 아이디입니다.'})
+    
     else:
         return render(request, 'entry/login.html')
 
