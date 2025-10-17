@@ -10,8 +10,8 @@
             <h1>네컷일기</h1>
         </div>
         <div class="tab-menu">
-            <a href="#" class="tab-item">로그인</a> {# {% url 'login' %} #}
-            <a href="#" class="tab-item active">회원가입</a> {# {% url 'signup' %} #}
+            <a href="{% url 'login' %}" class="tab-item">로그인</a>
+            <a href="{% url 'signup' %}" class="tab-item active">회원가입</a>
         </div>
         <form id="signup-form" method="post">
             {% csrf_token %}

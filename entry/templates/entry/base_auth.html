@@ -9,45 +9,27 @@
 
     <style>
         /* 기본 폰트 및 전체 레이아웃 설정 */
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-            background-color: #f9fafb;
-            margin: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-        /* 인증 영역 컨테이너 */
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; background-color: #f9fafb; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
         .auth-container { width: 100%; max-width: 400px; padding: 1rem; }
         .auth-wrapper { width: 100%; }
-        /* 제목 "네컷일기" */
         .auth-title { text-align: center; margin-bottom: 2.5rem; }
         .auth-title h1 { font-size: 2.25rem; font-weight: bold; color: #1f2937; margin: 0; }
-        /* 탭 메뉴 */
         .tab-menu { display: flex; width: 100%; margin-bottom: 2rem; }
         .tab-item { flex: 1; text-align: center; font-weight: bold; font-size: 1.125rem; padding-bottom: 0.5rem; text-decoration: none; color: #9ca3af; border-bottom: 2px solid transparent; transition: color 0.2s; }
         .tab-item:hover { color: #4b5563; }
         .tab-item.active { color: #0ea5e9; border-bottom-color: #0ea5e9; }
-        /* 입력창 그룹 */
         .input-group { position: relative; display: flex; align-items: center; border-bottom: 2px solid #e5e7eb; padding: 0.5rem 0; transition: border-color 0.2s; }
         .input-group:focus-within { border-bottom-color: #0ea5e9; }
         .input-group i { color: #9ca3af; margin-right: 0.75rem; }
         .input-group input { width: 100%; border: none; background-color: transparent; padding: 0.25rem 0.5rem; font-size: 1rem; }
         .input-group input:focus { outline: none; }
-        /* 입력 내용 지우기 & 비밀번호 보기 버튼 */
         .btn-clear, .btn-toggle-password { background: none; border: none; cursor: pointer; color: #9ca3af; padding: 0.25rem; display: none; }
         .btn-clear:hover, .btn-toggle-password:hover { color: #4b5563; }
-        /* 제출 버튼 */
         .btn-submit { width: 100%; background-color: #0ea5e9; color: white; font-weight: bold; font-size: 1.125rem; padding: 0.75rem 1rem; border: none; border-radius: 0.5rem; cursor: pointer; margin-top: 1.5rem; transition: background-color 0.2s; }
         .btn-submit:hover { background-color: #0284c7; }
-        /* 에러 메시지 */
         .error-message { color: #ef4444; font-size: 0.75rem; margin: 0.25rem 0 0.5rem 0; height: 1rem; }
-        /* --- 회원가입 페이지 추가 스타일 --- */
-        /* 중복확인 버튼 */
         .btn-action { background-color: #e5e7eb; color: #374151; border: none; border-radius: 0.375rem; padding: 0.25rem 0.5rem; font-size: 0.75rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background-color 0.2s; }
         .btn-action:hover { background-color: #d1d5db; }
-        /* 비밀번호 조건 안내 박스 */
         .conditions-box { font-size: 0.75rem; color: #6b7280; margin: 0.5rem 0; padding-left: 0.5rem; display: none; }
         .conditions-box p { margin: 0.25rem 0; transition: color 0.2s; }
         .conditions-box p.valid { color: #22c55e; }
@@ -71,20 +53,9 @@
                 const emailError = document.getElementById('email-error');
                 const passwordError = document.getElementById('password-error');
                 
-                emailInput.addEventListener('input', function() {
-                    clearEmailBtn.style.display = emailInput.value.length > 0 ? 'block' : 'none';
-                });
-
-                clearEmailBtn.addEventListener('click', function() {
-                    emailInput.value = '';
-                    clearEmailBtn.style.display = 'none';
-                    emailInput.focus();
-                });
-
-                passwordInput.addEventListener('input', function() {
-                    togglePasswordBtn.style.display = passwordInput.value.length > 0 ? 'block' : 'none';
-                });
-
+                emailInput.addEventListener('input', function() { clearEmailBtn.style.display = emailInput.value.length > 0 ? 'block' : 'none'; });
+                clearEmailBtn.addEventListener('click', function() { emailInput.value = ''; clearEmailBtn.style.display = 'none'; emailInput.focus(); });
+                passwordInput.addEventListener('input', function() { togglePasswordBtn.style.display = passwordInput.value.length > 0 ? 'block' : 'none'; });
                 togglePasswordBtn.addEventListener('click', function() {
                     const icon = togglePasswordBtn.querySelector('i');
                     if (passwordInput.type === 'password') {
@@ -96,32 +67,6 @@
                     }
                     lucide.createIcons();
                 });
-                
-                loginForm.addEventListener('submit', function(event) {
-                    event.preventDefault(); // 기본 제출 동작을 막습니다.
-                    emailError.textContent = '';
-                    passwordError.textContent = '';
-                    let isValid = true;
-                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-                    if (!emailInput.value) {
-                        emailError.textContent = '아이디(이메일)를 입력해주세요.';
-                        isValid = false;
-                    } else if (!emailRegex.test(emailInput.value)) {
-                        emailError.textContent = '아이디는 이메일 형식으로 입력해주세요.';
-                        isValid = false;
-                    }
-
-                    if (!passwordInput.value) {
-                        passwordError.textContent = '비밀번호를 입력해주세요.';
-                        isValid = false;
-                    }
-
-                    if (isValid) {
-                        // Django 폼 제출을 위해 form의 submit()을 직접 호출
-                        loginForm.submit();
-                    }
-                });
             }
 
             // =============================================
@@ -130,14 +75,12 @@
             const signupForm = document.getElementById('signup-form');
             if (signupForm) {
                 let isEmailVerified = false;
-
                 const emailInput = document.getElementById('signup-email');
                 const checkEmailBtn = document.getElementById('check-email-btn');
                 const passwordInput = document.getElementById('signup-password');
                 const passwordConfirmInput = document.getElementById('signup-password-confirm');
                 const nicknameInput = document.getElementById('signup-nickname');
                 const passwordConditions = document.getElementById('password-conditions');
-                
                 const emailError = document.getElementById('signup-email-error');
                 const passwordConfirmError = document.getElementById('signup-password-confirm-error');
                 const nicknameError = document.getElementById('signup-nickname-error');
@@ -145,34 +88,37 @@
                 emailInput.addEventListener('input', () => { isEmailVerified = false; });
 
                 checkEmailBtn.addEventListener('click', function() {
-                    // (이 부분은 나중에 AJAX/fetch로 백엔드와 통신하도록 수정해야 합니다.)
-                    alert('백엔드 연동 후 구현될 기능입니다.');
-                    isEmailVerified = true; // 임시로 통과 처리
+                    const email = emailInput.value;
+                    emailError.textContent = '';
+                    
+                    const DUPLICATE_EMAIL = 'admin@test.com'; // 임시 중복 이메일
+
+                    if (email === DUPLICATE_EMAIL) {
+                        emailError.textContent = '이미 사용 중인 이메일입니다.';
+                        isEmailVerified = false;
+                    } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
+                        emailError.textContent = '이메일 형식이 올바르지 않습니다.';
+                        isEmailVerified = false;
+                    } else {
+                        alert('사용 가능한 이메일입니다.');
+                        isEmailVerified = true;
+                    }
                 });
                 
                 passwordInput.addEventListener('focus', () => { passwordConditions.style.display = 'block'; });
                 passwordInput.addEventListener('blur', () => { passwordConditions.style.display = 'none'; });
+                
+                const validatePasswordConditions = () => {
+                    const password = passwordInput.value, email = emailInput.value;
+                    const setValidity = (c, v) => passwordConditions.querySelector(`[data-condition="${c}"]`).classList.toggle('valid', v);
+                    setValidity('length', password.length >= 8 && password.length <= 20);
+                    setValidity('combination', /(?=.*[a-zA-Z])(?=.*\d)|(?=.*[a-zA-Z])(?=.*[!@#$%^&*])|(?=.*\d)(?=.*[!@#$%^&*])/.test(password));
+                    setValidity('noKorean', !/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(password));
+                    setValidity('consecutive', !/(\w)\1\1/.test(password));
+                    setValidity('includesEmail', email ? !password.includes(email.split('@')[0]) : true);
+                };
                 passwordInput.addEventListener('input', validatePasswordConditions);
                 emailInput.addEventListener('input', validatePasswordConditions);
-
-                function validatePasswordConditions() {
-                    const password = passwordInput.value;
-                    const email = emailInput.value;
-                    
-                    const setConditionValidity = (condition, isValid) => {
-                        const el = passwordConditions.querySelector(`[data-condition="${condition}"]`);
-                        if (isValid) el.classList.add('valid');
-                        else el.classList.remove('valid');
-                    };
-
-                    setConditionValidity('length', password.length >= 8 && password.length <= 20);
-                    const combinationRegex = /(?=.*[a-zA-Z])(?=.*\d)|(?=.*[a-zA-Z])(?=.*[!@#$%^&*])|(?=.*\d)(?=.*[!@#$%^&*])/;
-                    setConditionValidity('combination', combinationRegex.test(password));
-                    setConditionValidity('noKorean', !/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(password));
-                    setConditionValidity('consecutive', !/(\w)\1\1/.test(password));
-                    const userId = email ? email.split('@')[0] : '';
-                    setConditionValidity('includesEmail', userId ? !password.includes(userId) : true);
-                }
 
                 passwordConfirmInput.addEventListener('input', function() {
                     if (passwordConfirmInput.value) {
@@ -190,23 +136,13 @@
                 });
 
                 signupForm.addEventListener('submit', function(event) {
-                    event.preventDefault(); // 기본 제출 동작을 막습니다.
-                    
-                    emailError.textContent = '';
-                    nicknameError.textContent = '';
-                    
-                    const nickname = nicknameInput.value;
-                    const nicknameRegex = /^[a-zA-Z가-힣]+$/;
-                    if (nickname.length < 2 || nickname.length > 20) { nicknameError.textContent = '이름은 2글자 이상 20글자 이하로 입력해주세요.'; return; }
-                    if (!nicknameRegex.test(nickname)) { nicknameError.textContent = '이름에는 특수문자나 숫자를 사용할 수 없습니다.'; return; }
-                    if (!isEmailVerified) { emailError.textContent = '이메일 중복 확인을 해주세요.'; return; }
-                    
                     const allPasswordConditionsValid = passwordConditions.querySelectorAll('p.valid').length === 5;
-                    if (!allPasswordConditionsValid) { alert('비밀번호 조건을 모두 만족해야 합니다.'); return; }
-                    if (passwordInput.value !== passwordConfirmInput.value) { alert('비밀번호가 일치하지 않습니다.'); return; }
-
-                    // 모든 검사를 통과하면 Django 폼 제출
-                    signupForm.submit();
+                    const passwordsMatch = passwordInput.value === passwordConfirmInput.value;
+                    
+                    if (!allPasswordConditionsValid || !passwordsMatch) {
+                        event.preventDefault(); 
+                        alert('비밀번호 조건을 만족하지 않거나, 비밀번호가 일치하지 않습니다.');
+                    }
                 });
             }
         });
