@@ -280,17 +280,73 @@ def generate_and_attach_image_to_diary(
     url, local_path = generate_image(prompt, size="1024x1024")
 
     if url:
-        diary.image_url = url
+        diary.temp_image_url = url
     elif local_path:
         try:
             from django.conf import settings  # type: ignore
             rel_path = local_path.relative_to(settings.MEDIA_ROOT)
-            diary.image_url = settings.MEDIA_URL.rstrip("/") + "/" + str(rel_path).replace("\\", "/")
+            diary.temp_image_url = settings.MEDIA_URL.rstrip("/") + "/" + str(rel_path).replace("\\", "/")
         except Exception:
-            diary.image_url = str(local_path)
+            diary.temp_image_url = str(local_path)
 
-    diary.save(update_fields=["image_url"])
+    diary.save(update_fields=["temp_image_url"])
     return prompt, url, local_path
+
+
+def save_temp_image_to_s3(diary_id: int) -> Optional[str]:
+    """
+    DiaryModel의 temp_image_url에서 이미지를 다운로드하고
+    S3에 업로드한 후 image_url에 저장
+    반환: S3 URL (성공 시)
+    """
+    import requests
+    from io import BytesIO
+    from datetime import datetime
+    from entry.models import DiaryModel
+
+    try:
+        # 1. DiaryModel 조회
+        diary = DiaryModel.objects.get(pk=diary_id)
+
+        if not diary.temp_image_url:
+            return None
+
+        # 2. temp_image_url에서 이미지 다운로드
+        response = requests.get(diary.temp_image_url, timeout=30)
+        response.raise_for_status()
+        image_data = BytesIO(response.content)
+
+        # 3. S3에 업로드
+        try:
+            from django.conf import settings
+            from diary.storages import CartoonStorage
+
+            # 파일명 생성: diary_{id}_{timestamp}.png
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            file_name = f"diary_{diary_id}_{timestamp}.png"
+
+            # CartoonStorage 사용 (media/cartoon/ 폴더에 저장)
+            storage = CartoonStorage()
+            saved_path = storage.save(file_name, image_data)
+
+            # S3 URL 생성
+            s3_url = storage.url(saved_path)
+
+            # 4. image_url에 저장
+            diary.image_url = s3_url
+            diary.save(update_fields=["image_url"])
+
+            return s3_url
+
+        except Exception as e:
+            print(f"S3 upload failed: {e}")
+            return None
+
+    except DiaryModel.DoesNotExist:
+        return None
+    except requests.RequestException as e:
+        print(f"Image download failed: {e}")
+        return None
 
 
 def run_sample(

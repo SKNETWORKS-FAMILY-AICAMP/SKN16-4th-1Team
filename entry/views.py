@@ -128,12 +128,33 @@ def generate_image(request, diary_id):
     if request.method != 'POST':
         return JsonResponse({'error': 'POST required'}, status=405)
 
-    # OpenAI 파이프라인 실행 후 URL을 모델에 저장
+    # OpenAI 파이프라인 실행 후 임시 URL을 모델에 저장
     try:
         from .Image_making.pipeline import generate_and_attach_image_to_diary
 
         generate_and_attach_image_to_diary(diary_id, language='en')
         diary = get_object_or_404(DiaryModel, pk=diary_id)
-        return JsonResponse({'status': 'ok', 'image_url': diary.image_url})
+        return JsonResponse({'status': 'ok', 'temp_image_url': diary.temp_image_url})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+def save_image(request, diary_id):
+    """
+    temp_image_url의 이미지를 S3에 업로드하고 image_url에 저장
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'POST required'}, status=405)
+
+    try:
+        from .Image_making.pipeline import save_temp_image_to_s3
+
+        # S3에 업로드하고 URL 반환
+        s3_url = save_temp_image_to_s3(diary_id)
+
+        if s3_url:
+            return JsonResponse({'status': 'ok', 'image_url': s3_url})
+        else:
+            return JsonResponse({'status': 'error', 'message': 'S3 upload failed'}, status=500)
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
