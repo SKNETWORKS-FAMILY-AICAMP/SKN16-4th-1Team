@@ -1,1 +1,0 @@
-"""API package for diaries."""
