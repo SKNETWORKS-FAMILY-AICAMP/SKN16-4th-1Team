@@ -1,32 +1,20 @@
 {% extends 'entry/base_subpage.html' %}
-
 {% block title %}환경설정{% endblock %}
-
 {% block content %}
 <section class="profile-section">
     <h1 class="section-title">⚙️ 환경설정</h1>
-
     <div class="info-group">
         <h2>테마 선택</h2>
-        <select id="theme-select" class="form-select">
-            <option value="light">라이트 모드</option>
-            <option value="dark">다크 모드</option>
-        </select>
+        <select id="theme-select" class="form-select"><option value="light">라이트 모드</option><option value="dark">다크 모드</option></select>
     </div>
     <div class="info-group">
         <h2>언어 선택</h2>
-        <select id="language-select" class="form-select">
-            <option value="ko">한국어</option>
-            <option value="en">English</option>
-        </select>
+        <select id="language-select" class="form-select"><option value="ko">한국어</option><option value="en">English</option></select>
     </div>
     <div class="info-group">
         <div class="info-header" style="border:none;">
             <h2>알림 받기</h2>
-            <label class="switch">
-                <input type="checkbox" id="notification-toggle" checked>
-                <span class="slider round"></span>
-            </label>
+            <label class="switch"><input type="checkbox" id="notification-toggle" checked><span class="slider round"></span></label>
         </div>
     </div>
     <div style="display: flex; justify-content: flex-end; margin-top: 2rem;">
@@ -41,46 +29,30 @@ document.addEventListener('DOMContentLoaded', function() {
     const notificationToggle = document.getElementById('notification-toggle');
     const saveSettingsBtn = document.getElementById('save-settings-btn');
 
-    function loadSettings() {
-        const savedTheme = localStorage.getItem('theme');
-        const savedLang = localStorage.getItem('language');
-        const savedNotif = localStorage.getItem('notifications');
-
-        if (savedTheme) {
-            themeSelect.value = savedTheme;
-            if (savedTheme === 'dark') {
-                document.documentElement.classList.add('dark');
-            } else {
-                document.documentElement.classList.remove('dark');
-            }
-        }
-        if (savedLang) {
-            languageSelect.value = savedLang;
-        }
-        if (savedNotif !== null) {
-            notificationToggle.checked = savedNotif === 'true';
-        }
-    }
-
+    // 👇👇👇 '저장' 버튼 클릭 시, 테마를 즉시 html에 적용하는 로직 추가 👇👇👇
     saveSettingsBtn.addEventListener('click', function() {
         const theme = themeSelect.value;
-        const language = languageSelect.value;
-        const notifications = notificationToggle.checked;
-
         localStorage.setItem('theme', theme);
-        localStorage.setItem('language', language);
-        localStorage.setItem('notifications', notifications);
+        localStorage.setItem('language', languageSelect.value);
+        localStorage.setItem('notifications', notificationToggle.checked);
 
         if (theme === 'dark') {
             document.documentElement.classList.add('dark');
         } else {
             document.documentElement.classList.remove('dark');
         }
-
         alert('설정이 저장되었습니다.');
     });
 
-    loadSettings();
+    // 페이지 로드 시 저장된 설정 불러오기 (기존과 동일)
+    (function loadSettings() {
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme) themeSelect.value = savedTheme;
+        const savedLang = localStorage.getItem('language');
+        if (savedLang) languageSelect.value = savedLang;
+        const savedNotif = localStorage.getItem('notifications');
+        if (savedNotif !== null) notificationToggle.checked = savedNotif === 'true';
+    })();
 });
 </script>
 {% endblock %}
