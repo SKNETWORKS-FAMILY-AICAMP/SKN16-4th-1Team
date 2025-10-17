@@ -86,15 +86,37 @@ Django 웹 애플리케이션 (단일 구조)
 
 ## 9. 주요 흐름(파이프라인)
 ### 일기 작성 → 4컷 생성
+0) 로그인/회원가입
 1) 사용자가 일기 작성 (Django Form)
 2) "생성" 버튼 클릭 → Celery Task 등록
 3) Celery Worker 실행:
    - OpenAI GPT-4: 일기 → 4컷 프롬프트 생성 (JSON)
    - OpenAI GPT-4 dall-e-3: 각 프롬프트 → 4개 이미지 생성 (추후: HF-Qwen모델 이용)
    - Pillow: 4컷 → 2x2 그리드 합성
-4) 이미지 저장 (SQLite 경로 저장, 추후: AWS S3)
-5) Cartoon status = 'succeeded'
-6) 사용자에게 결과 표시 (재생성/저장/다운로드)
+4) "재생성" 버튼 클릭 → 이미지 생성 다시 시도(S3 저장 안됨)
+5) "저장" 버튼 클릭 → AWS S3: 이미지 저장, Django: 날짜/일기본문/S3 URL 저장
+6) Cartoon status = 'succeeded'
+7) 캘린더: 해당 날짜 일기/이미지 불러오기 및 다운로드
+
+
+## 9. 주요 흐름(파이프라인)
+### 일기 작성 → 4컷 생성
+0) 로그인/회원가입
+1) 사용자가 일기 작성 (Django Form)
+2) "생성" 버튼 클릭 → Celery Task 등록
+3) Celery Worker 실행:
+   - OpenAI GPT-4: 일기 → 4컷 프롬프트 생성 (JSON)
+   - OpenAI GPT-4 dall-e-3: 각 프롬프트 → 4개 이미지 생성 (추후: HF-Qwen모델 이용)
+   - Pillow: 4컷 → 2x2 그리드 합성
+4) "재생성" 버튼 클릭 → 이미지 생성 다시 시도(S3 저장 안됨)
+5) "저장" 버튼 클릭 → AWS S3: 이미지 저장, Django: 날짜/일기본문/S3 URL 저장
+6) Cartoon status = 'succeeded'
+7) 캘린더: 해당 날짜 일기/이미지 불러오기 및 다운로드
+
+일기 작성 → "이미지 생성" 클릭 → 이미지 생성(미리보기 화면) 및 DB temp_url 저장 → "저장" 클릭 → S3 업로드, DB image_url저장
+														  → "재생성" 클릭 → 이미지 다시 생성, DB temp_url 추가 
+
+
 
 ### 캘린더 조회
 1) /calendar 접속
@@ -174,3 +196,4 @@ Django 웹 애플리케이션 (단일 구조)
    - 개발 중에는 Mock 데이터 사용
    - 무한 루프나 대량 호출 조심
    - API 호출 실패 시 최대 1회만 재시도
+

@@ -7,4 +7,5 @@ urlpatterns = [
     path('show/<int:diary_id>', views.detail, name='detail'),
     path('productivity/', views.productivity, name='productivity'),
     path('generate-image/<int:diary_id>/', views.generate_image, name='generate_image'),
+    path('save-image/<int:diary_id>/', views.save_image, name='save_image'),
 ]

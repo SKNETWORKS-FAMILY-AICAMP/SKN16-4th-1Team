@@ -132,7 +132,7 @@ if USE_S3:
     AWS_S3_OBJECT_PARAMETERS = {
         'CacheControl': 'max-age=86400',
     }
-    AWS_DEFAULT_ACL = 'public-read'
+    AWS_DEFAULT_ACL = None  # ACL 비활성화 (버킷에서 ACL을 지원하지 않음)
     AWS_S3_FILE_OVERWRITE = False
     AWS_QUERYSTRING_AUTH = False
 

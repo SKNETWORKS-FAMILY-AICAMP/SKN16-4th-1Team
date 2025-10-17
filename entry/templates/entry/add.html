@@ -44,6 +44,7 @@
       </div>
       <div class="d-flex justify-content-center">
         <button type="button" class="btn btn-outline-secondary me-2" id="regenerate-btn" disabled>재생성</button>
+        <button type="button" class="btn btn-success me-2" id="save-btn" disabled>S3 저장</button>
         <a id="detail-link" class="btn btn-outline-secondary disabled" href="#" tabindex="-1" aria-disabled="true">저장 확인</a>
       </div>
     </div>
@@ -64,6 +65,7 @@
   const previewImage = document.getElementById('preview-image');
   const previewPlaceholder = document.getElementById('preview-placeholder');
   const regenerateBtn = document.getElementById('regenerate-btn');
+  const saveBtn = document.getElementById('save-btn');
   const detailLink = document.getElementById('detail-link');
 
   // 서버에서 새로 저장된 ID가 내려오면 즉시 이미지 생성 시작
@@ -93,18 +95,15 @@
         headers: { 'X-CSRFToken': getCookie('csrftoken') || '' }
       });
       const data = await resp.json();
-      if (data.status === 'ok' && data.image_url) {
+      if (data.status === 'ok' && data.temp_image_url) {
         progressBar.classList.remove('progress-bar-animated');
         animateProgressTo(100);
         previewPlaceholder.style.display = 'none';
-        previewImage.src = data.image_url;
+        previewImage.src = data.temp_image_url;
         previewImage.style.display = 'block';
         regenerateBtn.disabled = false;
-        // 상세보기 링크 활성화
-        detailLink.classList.remove('disabled');
-        detailLink.removeAttribute('tabindex');
-        detailLink.removeAttribute('aria-disabled');
-        detailLink.href = `{% url 'detail' 0 %}`.replace('/0', `/${id}`);
+        saveBtn.disabled = false;  // S3 저장 버튼 활성화
+        // 상세보기 링크는 S3 저장 후에만 활성화하도록 변경
       } else {
         throw new Error(data.message || '이미지 생성 실패');
       }
@@ -124,6 +123,43 @@
   regenerateBtn && regenerateBtn.addEventListener('click', () => {
     if (!NEW_DIARY_ID) return;
     startGeneration(NEW_DIARY_ID);
+  });
+
+  // S3 저장 버튼: temp_image_url을 S3에 업로드
+  saveBtn && saveBtn.addEventListener('click', async () => {
+    if (!NEW_DIARY_ID) return;
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = '저장 중...';
+
+    try {
+      const resp = await fetch(`{% url 'save_image' 0 %}`.replace('/0/', `/${NEW_DIARY_ID}/`), {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCookie('csrftoken') || '' }
+      });
+      const data = await resp.json();
+
+      if (data.status === 'ok' && data.image_url) {
+        saveBtn.textContent = '저장 완료!';
+        saveBtn.classList.remove('btn-success');
+        saveBtn.classList.add('btn-secondary');
+
+        // 상세보기 링크 활성화
+        detailLink.classList.remove('disabled');
+        detailLink.removeAttribute('tabindex');
+        detailLink.removeAttribute('aria-disabled');
+        detailLink.href = `{% url 'detail' 0 %}`.replace('/0', `/${NEW_DIARY_ID}`);
+
+        alert('이미지가 S3에 저장되었습니다!');
+      } else {
+        throw new Error(data.message || 'S3 저장 실패');
+      }
+    } catch (e) {
+      console.error(e);
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'S3 저장';
+      alert('S3 저장 중 오류가 발생했습니다. 다시 시도해주세요.');
+    }
   });
 </script>
 {% endblock %}
