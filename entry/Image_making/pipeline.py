@@ -14,6 +14,8 @@ from __future__ import annotations
 import base64
 import os
 import re
+import shutil
+import uuid
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -32,6 +34,7 @@ except Exception:  # pragma: no cover
 BASE_DIR = Path(__file__).resolve().parents[2]
 PROJECT_ROOT = BASE_DIR
 MEDIA_DIR = PROJECT_ROOT / "media" / "generated"
+FINAL_MEDIA_SUBDIR = "diary"
 
 
 def _ensure_env_loaded() -> None:
@@ -172,7 +175,8 @@ def generate_image(prompt: str, size: str = "1024x1024") -> Tuple[Optional[str],
 
     if b64:
         MEDIA_DIR.mkdir(parents=True, exist_ok=True)
-        file_path = MEDIA_DIR / "diary_4cut_1024.png"
+        temp_filename = f"temp_{uuid.uuid4().hex}.png"
+        file_path = MEDIA_DIR / temp_filename
         with open(file_path, "wb") as f:
             f.write(base64.b64decode(b64))
         return None, file_path
@@ -199,19 +203,53 @@ def generate_and_attach_image_to_diary(
 
     url, local_path = generate_image(prompt, size="1024x1024")
 
-    if url:
-        diary.image_url = url
-    elif local_path:
-        try:
-            from django.conf import settings  # type: ignore
+    saved_temp_path: Optional[Path] = None
+    temp_url: Optional[str] = None
 
-            rel_path = local_path.relative_to(settings.MEDIA_ROOT)
-            diary.image_url = settings.MEDIA_URL.rstrip("/") + "/" + str(rel_path).replace("\\", "/")
-        except Exception:
-            diary.image_url = str(local_path)
+    try:
+        from django.conf import settings  # type: ignore
 
-    diary.save(update_fields=["image_url"])
-    return prompt, url, local_path
+        media_root = Path(settings.MEDIA_ROOT)
+        media_url = settings.MEDIA_URL.rstrip("/")
+        MEDIA_DIR.mkdir(parents=True, exist_ok=True)
+
+        def _build_temp_filename(suffix: str = ".png") -> Path:
+            return MEDIA_DIR / f"temp_diary_{diary.id}_{uuid.uuid4().hex}{suffix}"
+
+        if local_path and local_path.exists():
+            destination = _build_temp_filename(local_path.suffix)
+            shutil.move(str(local_path), destination)
+            saved_temp_path = destination
+        elif url:
+            try:
+                import urllib.request
+
+                destination = _build_temp_filename(".png")
+                with urllib.request.urlopen(url, timeout=10) as response:  # nosec B310
+                    destination.write_bytes(response.read())
+                saved_temp_path = destination
+            except Exception:
+                temp_url = url  # fallback
+
+        if saved_temp_path:
+            rel_path = saved_temp_path.relative_to(media_root)
+            temp_url = f"{media_url}/{str(rel_path).replace(os.sep, '/')}"
+
+    except Exception:
+        # SETTINGS or file operations may fail; fallback to original URL/path
+        if local_path:
+            temp_url = str(local_path)
+        else:
+            temp_url = url
+
+    if temp_url is None:
+        temp_url = url
+
+    if temp_url is not None:
+        diary.temp_image_url = temp_url
+        diary.save(update_fields=["temp_image_url"])
+
+    return prompt, temp_url, saved_temp_path or local_path
 
 
 def run_sample(

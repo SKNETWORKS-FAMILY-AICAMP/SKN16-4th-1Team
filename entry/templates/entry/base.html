@@ -18,17 +18,32 @@
     <title>{% block title %}Add Entry{% endblock %}</title>
 
     <style>
-        /* 기존 add.html의 에디터 높이 보장 */
         html body div.container.contact-form form.mt-5 div.ql-container.ql-snow {
             height: 300px;
         }
-        body { font-family: 'Vollkorn', serif; }
+        body {
+            font-family: 'Vollkorn', serif;
+        }
+        .navbar .auth-buttons .btn + .btn {
+            margin-left: 0.5rem;
+        }
     </style>
 </head>
 <body>
 
 <nav class="navbar navbar-expand-lg navbar-light bg-light">
-    <a class="navbar-brand" href="{% url 'entry' %}">Diary App</a>
+    <div class="d-flex align-items-center">
+        <a class="navbar-brand mb-0" href="{% url 'entry' %}">Diary App</a>
+        <div class="auth-buttons d-none d-lg-flex align-items-center ml-3">
+            {% if request.user.is_authenticated %}
+                <span class="text-muted mr-3">Hello, {{ request.user.last_name|default:request.user.first_name|default:request.user.username }}!</span>
+                <a class="btn btn-primary btn-sm" href="{% url 'logout' %}">Log out</a>
+            {% else %}
+                <a class="btn btn-primary btn-sm mr-2" href="{% url 'login' %}">Log in</a>
+                <a class="btn btn-primary btn-sm" href="{% url 'signup' %}">Sign up</a>
+            {% endif %}
+        </div>
+    </div>
     <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
             aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
         <span class="navbar-toggler-icon"></span>
@@ -58,6 +73,14 @@
                     <hr class="d-xl-none d-lg-none">
                 </a>
             </li>
+            <li class="nav-item d-lg-none mt-3">
+                {% if request.user.is_authenticated %}
+                    <a class="btn btn-primary btn-block" href="{% url 'logout' %}">Log out</a>
+                {% else %}
+                    <a class="btn btn-primary btn-block mb-2" href="{% url 'login' %}">Log in</a>
+                    <a class="btn btn-primary btn-block" href="{% url 'signup' %}">Sign up</a>
+                {% endif %}
+            </li>
         </ul>
     </div>
 </nav>
@@ -69,10 +92,36 @@
     </div>
 </div>
 
+{% if messages %}
+<div class="container mt-3">
+    {% for message in messages %}
+        <div class="alert alert-{{ message.tags|default:'info' }}" role="alert">
+            {{ message }}
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
+
 {% block content %}{% endblock %}
 
+<a class="fixed-bottom mb-3 mr-3" href="https://github.com/theArjun/diary-app" target="_blank" rel="noopener">
+    <button class="btn btn-light rounded text-dark float-right shadow">
+        <span class="mr-2">View on GitHub</span>
+        <img class="mb-1" height="26"
+             src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
+             alt="GitHub logo">
+    </button>
+</a>
 
-<a class="fixed-bottom" href="https://github.com/theArjun/diary-app" target="_blank">
-    <button class="btn btn-light rounded text-dark float-right">
-        <img class="mb-1" height="30"
-             src="https://i.pinimg.com/original
+<script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
+        integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
+        crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"
+        integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+        crossorigin="anonymous"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+        integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+        crossorigin="anonymous"></script>
+
+</body>
+</html>

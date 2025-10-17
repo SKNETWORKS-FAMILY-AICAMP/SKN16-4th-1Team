@@ -7,6 +7,7 @@ class DiaryModel(models.Model):
     posted_date = models.DateTimeField()
     productivity = models.IntegerField()
     image_url = models.URLField(max_length=500, blank=True, null=True, verbose_name='Diary Image')
+    temp_image_url = models.URLField(max_length=500, blank=True, null=True, verbose_name='Temporary Image')
 
     def date_for_chart(self):
         return self.posted_date.strftime('%b %e')

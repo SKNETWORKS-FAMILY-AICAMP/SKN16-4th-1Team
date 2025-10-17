@@ -1,9 +1,18 @@
 from datetime import datetime
+import shutil
+from pathlib import Path
+from typing import Optional
 
-from django.http import HttpResponseRedirect, JsonResponse
-from django.shortcuts import render, get_object_or_404
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth import authenticate, login as auth_login
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
+from django.views.decorators.http import require_POST
 
-from .forms import AddForm
+from .Image_making.pipeline import FINAL_MEDIA_SUBDIR
+from .forms import AddForm, SignupForm
 from .models import DiaryModel
 
 
@@ -29,8 +38,8 @@ def entry(request):
 
             todays_diary.save()
 
-            # 저장 직후 동일 페이지에서 이미지 생성 트리거를 위해 id 전달
-            form = AddForm()  # 새 폼으로 초기화
+            # Pass diary id so the template can immediately trigger image generation
+            form = AddForm()  # reset to blank form after saving
             return render(
                 request,
                 'entry/add.html',
@@ -43,7 +52,7 @@ def entry(request):
                 }
             )
 
-        # 유효하지 않으면 그대로 다시 렌더
+        # Invalid form: re-render page with errors
         return render(
             request,
             'entry/add.html',
@@ -124,16 +133,91 @@ def productivity(request):
     )
 
 
+@require_POST
 def generate_image(request, diary_id):
-    if request.method != 'POST':
-        return JsonResponse({'error': 'POST required'}, status=405)
-
-    # OpenAI 파이프라인 실행 후 URL을 모델에 저장
     try:
         from .Image_making.pipeline import generate_and_attach_image_to_diary
 
-        generate_and_attach_image_to_diary(diary_id, language='en')
+        _, temp_url, _ = generate_and_attach_image_to_diary(diary_id, language='en')
         diary = get_object_or_404(DiaryModel, pk=diary_id)
-        return JsonResponse({'status': 'ok', 'image_url': diary.image_url})
+        response_url = temp_url or diary.temp_image_url
+        return JsonResponse({'status': 'ok', 'temp_image_url': response_url})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+def _resolve_media_path(url: str) -> Optional[Path]:
+    if not settings.MEDIA_URL:
+        return None
+    media_url = settings.MEDIA_URL.rstrip('/')
+    normalized_url = url.rstrip('/')
+    if normalized_url.startswith(media_url):
+        rel = normalized_url[len(media_url):].lstrip('/')
+    elif settings.MEDIA_URL and normalized_url.startswith(settings.MEDIA_URL):
+        rel = normalized_url[len(settings.MEDIA_URL):].lstrip('/')
+    else:
+        return None
+    return Path(settings.MEDIA_ROOT) / rel
+
+
+@require_POST
+def finalize_image(request, diary_id):
+    diary = get_object_or_404(DiaryModel, pk=diary_id)
+    if not diary.temp_image_url:
+        return JsonResponse({'status': 'error', 'message': '임시 이미지가 없습니다.'}, status=400)
+
+    temp_url = diary.temp_image_url
+    final_url = temp_url
+
+    temp_path = _resolve_media_path(temp_url)
+    if temp_path and temp_path.exists():
+        final_dir = Path(settings.MEDIA_ROOT) / FINAL_MEDIA_SUBDIR
+        final_dir.mkdir(parents=True, exist_ok=True)
+        new_name = temp_path.name.replace('temp_', 'final_', 1)
+        final_path = final_dir / new_name
+        shutil.move(str(temp_path), final_path)
+        rel_path = final_path.relative_to(Path(settings.MEDIA_ROOT))
+        final_url = settings.MEDIA_URL.rstrip('/') + '/' + rel_path.as_posix()
+
+    diary.image_url = final_url
+    diary.temp_image_url = None
+    diary.save(update_fields=['image_url', 'temp_image_url'])
+
+    return JsonResponse({
+        'status': 'ok',
+        'image_url': final_url,
+        'detail_url': reverse('detail', args=[diary.id]),
+    })
+
+
+
+
+def signup(request):
+    if request.method == 'POST':
+        form = SignupForm(request.POST)
+        if form.is_valid():
+            form.save()
+            authenticated_user = authenticate(
+                request,
+                username=form.cleaned_data['email'],
+                password=form.cleaned_data['password'],
+            )
+            if authenticated_user is not None:
+                auth_login(request, authenticated_user)
+                messages.success(request, '회원가입이 완료되었습니다.')
+                return redirect('entry')
+
+            messages.info(request, '회원가입이 완료되었습니다. 로그인해 주세요.')
+            return redirect('login')
+    else:
+        form = SignupForm()
+
+    return render(
+        request,
+        'entry/signup.html',
+        {
+            'title': '회원가입',
+            'subtitle': '새로운 일기장을 시작해 보세요.',
+            'form': form,
+        }
+    )
