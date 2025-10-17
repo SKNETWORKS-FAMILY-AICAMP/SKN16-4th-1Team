@@ -3,41 +3,78 @@
 <html lang="ko">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <title>{% block title %}네컷일기{% endblock %}</title>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <link href="https://fonts.googleapis.com/css?family=Vollkorn&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <script src="https://unpkg.com/lucide@latest"></script> <title>{% block title %}네컷일기{% endblock %}</title>
     <style>
-        /* 기본 폰트 및 전체 레이아웃 설정 */
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; background-color: #f9fafb; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        .auth-container { width: 100%; max-width: 400px; padding: 1rem; }
-        .auth-wrapper { width: 100%; }
-        .auth-title { text-align: center; margin-bottom: 2.5rem; }
-        .auth-title h1 { font-size: 2.25rem; font-weight: bold; color: #1f2937; margin: 0; }
-        .tab-menu { display: flex; width: 100%; margin-bottom: 2rem; }
-        .tab-item { flex: 1; text-align: center; font-weight: bold; font-size: 1.125rem; padding-bottom: 0.5rem; text-decoration: none; color: #9ca3af; border-bottom: 2px solid transparent; transition: color 0.2s; }
-        .tab-item:hover { color: #4b5563; }
-        .tab-item.active { color: #0ea5e9; border-bottom-color: #0ea5e9; }
-        .input-group { position: relative; display: flex; align-items: center; border-bottom: 2px solid #e5e7eb; padding: 0.5rem 0; transition: border-color 0.2s; }
-        .input-group:focus-within { border-bottom-color: #0ea5e9; }
-        .input-group i { color: #9ca3af; margin-right: 0.75rem; }
-        .input-group input { width: 100%; border: none; background-color: transparent; padding: 0.25rem 0.5rem; font-size: 1rem; }
-        .input-group input:focus { outline: none; }
-        .btn-clear, .btn-toggle-password { background: none; border: none; cursor: pointer; color: #9ca3af; padding: 0.25rem; display: none; }
-        .btn-clear:hover, .btn-toggle-password:hover { color: #4b5563; }
-        .btn-submit { width: 100%; background-color: #0ea5e9; color: white; font-weight: bold; font-size: 1.125rem; padding: 0.75rem 1rem; border: none; border-radius: 0.5rem; cursor: pointer; margin-top: 1.5rem; transition: background-color 0.2s; }
-        .btn-submit:hover { background-color: #0284c7; }
-        .error-message { color: #ef4444; font-size: 0.75rem; margin: 0.25rem 0 0.5rem 0; height: 1rem; }
-        .btn-action { background-color: #e5e7eb; color: #374151; border: none; border-radius: 0.375rem; padding: 0.25rem 0.5rem; font-size: 0.75rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: background-color 0.2s; }
-        .btn-action:hover { background-color: #d1d5db; }
-        .conditions-box { font-size: 0.75rem; color: #6b7280; margin: 0.5rem 0; padding-left: 0.5rem; display: none; }
-        .conditions-box p { margin: 0.25rem 0; transition: color 0.2s; }
-        .conditions-box p.valid { color: #22c55e; }
+        /* Bootstrap을 기반으로 한 최소한의 추가 스타일 */
+        body { 
+            font-family: 'Vollkorn', serif; 
+            background-color: #f8f9fa;
+            display: flex;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .auth-card {
+            max-width: 450px;
+            margin: 2rem auto;
+            border: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        .nav-tabs .nav-link {
+            font-weight: bold;
+            color: #6c757d;
+        }
+        .nav-tabs .nav-link.active {
+            color: #007bff;
+            border-color: #dee2e6 #dee2e6 #fff;
+        }
+        .error-message {
+            color: #dc3545; /* Bootstrap danger color */
+            font-size: 0.8rem;
+            height: 1rem;
+            margin-top: 0.25rem;
+        }
+        .conditions-box {
+            font-size: 0.8rem;
+            color: #6c757d;
+            margin-top: 0.5rem;
+            padding-left: 0.25rem;
+            display: none; /* JS로 제어 */
+        }
+        .conditions-box p {
+            margin: 0.1rem 0;
+        }
+        .conditions-box p.valid {
+            color: #28a745; /* Bootstrap success color */
+        }
+        /* 로그인 페이지 아이콘 버튼 스타일 */
+        .position-relative { position: relative; }
+        .btn-clear-input, .btn-toggle-password {
+            position: absolute;
+            top: 50%;
+            right: 10px;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #adb5bd;
+            padding: 0.25rem;
+            line-height: 1;
+        }
     </style>
 </head>
 <body>
 
-    {% block content %}{% endblock %}
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -50,12 +87,18 @@
                 const passwordInput = document.getElementById('password');
                 const clearEmailBtn = document.getElementById('clear-email');
                 const togglePasswordBtn = document.getElementById('toggle-password');
-                const emailError = document.getElementById('email-error');
-                const passwordError = document.getElementById('password-error');
-                
-                emailInput.addEventListener('input', function() { clearEmailBtn.style.display = emailInput.value.length > 0 ? 'block' : 'none'; });
-                clearEmailBtn.addEventListener('click', function() { emailInput.value = ''; clearEmailBtn.style.display = 'none'; emailInput.focus(); });
-                passwordInput.addEventListener('input', function() { togglePasswordBtn.style.display = passwordInput.value.length > 0 ? 'block' : 'none'; });
+
+                emailInput.addEventListener('input', function() {
+                    clearEmailBtn.style.display = emailInput.value.length > 0 ? 'block' : 'none';
+                });
+                clearEmailBtn.addEventListener('click', function() {
+                    emailInput.value = '';
+                    clearEmailBtn.style.display = 'none';
+                    emailInput.focus();
+                });
+                passwordInput.addEventListener('input', function() {
+                    togglePasswordBtn.style.display = passwordInput.value.length > 0 ? 'block' : 'none';
+                });
                 togglePasswordBtn.addEventListener('click', function() {
                     const icon = togglePasswordBtn.querySelector('i');
                     if (passwordInput.type === 'password') {
@@ -79,19 +122,16 @@
                 const checkEmailBtn = document.getElementById('check-email-btn');
                 const passwordInput = document.getElementById('signup-password');
                 const passwordConfirmInput = document.getElementById('signup-password-confirm');
-                const nicknameInput = document.getElementById('signup-nickname');
                 const passwordConditions = document.getElementById('password-conditions');
                 const emailError = document.getElementById('signup-email-error');
                 const passwordConfirmError = document.getElementById('signup-password-confirm-error');
-                const nicknameError = document.getElementById('signup-nickname-error');
 
                 emailInput.addEventListener('input', () => { isEmailVerified = false; });
 
                 checkEmailBtn.addEventListener('click', function() {
                     const email = emailInput.value;
                     emailError.textContent = '';
-                    
-                    const DUPLICATE_EMAIL = 'admin@test.com'; // 임시 중복 이메일
+                    const DUPLICATE_EMAIL = 'admin@test.com';
 
                     if (email === DUPLICATE_EMAIL) {
                         emailError.textContent = '이미 사용 중인 이메일입니다.';
@@ -105,48 +145,68 @@
                     }
                 });
                 
-                passwordInput.addEventListener('focus', () => { passwordConditions.style.display = 'block'; });
-                passwordInput.addEventListener('blur', () => { passwordConditions.style.display = 'none'; });
+                if (passwordInput && passwordConditions) {
+                    passwordInput.addEventListener('focus', () => { passwordConditions.style.display = 'block'; });
+                    passwordInput.addEventListener('blur', () => { passwordConditions.style.display = 'none'; });
+                }
                 
                 const validatePasswordConditions = () => {
-                    const password = passwordInput.value, email = emailInput.value;
-                    const setValidity = (c, v) => passwordConditions.querySelector(`[data-condition="${c}"]`).classList.toggle('valid', v);
+                    if (!passwordInput || !passwordConditions) return;
+                    const password = passwordInput.value;
+                    const email = emailInput.value;
+                    const setValidity = (condition, isValid) => {
+                        const el = passwordConditions.querySelector(`p[data-condition="${condition}"]`);
+                        if(el) el.classList.toggle('valid', isValid);
+                    };
                     setValidity('length', password.length >= 8 && password.length <= 20);
                     setValidity('combination', /(?=.*[a-zA-Z])(?=.*\d)|(?=.*[a-zA-Z])(?=.*[!@#$%^&*])|(?=.*\d)(?=.*[!@#$%^&*])/.test(password));
                     setValidity('noKorean', !/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(password));
                     setValidity('consecutive', !/(\w)\1\1/.test(password));
-                    setValidity('includesEmail', email ? !password.includes(email.split('@')[0]) : true);
+                    const userId = email ? email.split('@')[0] : '';
+                    setValidity('includesEmail', userId ? !password.includes(userId) : true);
                 };
-                passwordInput.addEventListener('input', validatePasswordConditions);
-                emailInput.addEventListener('input', validatePasswordConditions);
 
-                passwordConfirmInput.addEventListener('input', function() {
-                    if (passwordConfirmInput.value) {
-                        if (passwordInput.value === passwordConfirmInput.value) {
-                            passwordConfirmError.textContent = '비밀번호가 일치합니다.';
-                            passwordConfirmError.style.color = '#22c55e';
+                if (passwordInput) passwordInput.addEventListener('input', validatePasswordConditions);
+                if (emailInput) emailInput.addEventListener('input', validatePasswordConditions);
+
+                if (passwordConfirmInput) {
+                    passwordConfirmInput.addEventListener('input', () => {
+                        if (passwordConfirmInput.value) {
+                           if (passwordInput.value === passwordConfirmInput.value) {
+                                passwordConfirmError.textContent = '비밀번호가 일치합니다.';
+                                passwordConfirmError.style.color = '#28a745';
+                            } else {
+                                passwordConfirmError.textContent = '비밀번호가 일치하지 않습니다.';
+                                passwordConfirmError.style.color = '#dc3545';
+                            }
                         } else {
-                            passwordConfirmError.textContent = '비밀번호가 일치하지 않습니다.';
-                            passwordConfirmError.style.color = '#ef4444';
+                           passwordConfirmError.textContent = '';
                         }
-                    } else {
-                        passwordConfirmError.textContent = '확인을 위해 비밀번호를 다시 입력해주세요.';
-                        passwordConfirmError.style.color = '#6b7280';
-                    }
-                });
+                    });
+                }
 
                 signupForm.addEventListener('submit', function(event) {
-                    const allPasswordConditionsValid = passwordConditions.querySelectorAll('p.valid').length === 5;
+                    const allPasswordConditionsValid = passwordConditions ? passwordConditions.querySelectorAll('p.valid').length === 5 : true;
                     const passwordsMatch = passwordInput.value === passwordConfirmInput.value;
-                    
-                    if (!allPasswordConditionsValid || !passwordsMatch) {
-                        event.preventDefault(); 
-                        alert('비밀번호 조건을 만족하지 않거나, 비밀번호가 일치하지 않습니다.');
+                    if (!isEmailVerified) {
+                        event.preventDefault();
+                        emailError.textContent = '이메일 중복 확인을 해주세요.';
+                        return;
+                    }
+                    if (!allPasswordConditionsValid) {
+                        event.preventDefault();
+                        alert('비밀번호 조건을 모두 만족해야 합니다.');
+                        return;
+                    }
+                    if (!passwordsMatch) {
+                        event.preventDefault();
+                        alert('비밀번호가 일치하지 않습니다.');
+                        return;
                     }
                 });
             }
         });
-        
+        // 아이콘을 그려주는 함수
         lucide.createIcons();
     </script>
 </body>
