@@ -149,24 +149,9 @@ def save_image(request, diary_id):
 
 @require_http_methods(["GET"])
 def get_diary_by_date(request, date_str):
-<<<<<<< HEAD
-    """
-    특정 날짜의 일기 조회
-    URL: /api/diary/<date_str>/
-    예: /api/diary/2025-10-18/
-    """
-    try:
-        from datetime import datetime
-        
-        # 날짜 문자열을 date 객체로 변환
-        target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
-        
-        # ⭐ 해당 날짜의 일기 조회 (image_url 여부 상관없이 조회)
-=======
     try:
         target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
         
->>>>>>> hyunmin
         diary = DiaryModel.objects.filter(
             posted_date__date=target_date
         ).order_by('-posted_date').first()
@@ -184,11 +169,7 @@ def get_diary_by_date(request, date_str):
                     'note': diary.note,
                     'content': diary.content,
                     'productivity': diary.productivity,
-<<<<<<< HEAD
-                    'image_url': diary.image_url if diary.image_url else None,  # 있으면 S3 URL, 없으면 null
-=======
                     'image_url': diary.image_url if diary.image_url else None,
->>>>>>> hyunmin
                     'posted_date': diary.posted_date.strftime('%Y-%m-%d %H:%M:%S')
                 }
             })
@@ -217,20 +198,8 @@ def get_diary_by_date(request, date_str):
 
 @require_http_methods(["GET"])
 def get_diary_dates(request):
-<<<<<<< HEAD
-    """
-    일기가 작성된 모든 날짜 목록 조회
-    URL: /api/diary/dates/
-    """
-    try:
-        # 모든 일기의 날짜 조회 (posted_date__date로 날짜만 추출)
-        diary_dates = DiaryModel.objects.values_list('posted_date__date', flat=True).distinct()
-        
-        # date 객체를 문자열로 변환
-=======
     try:
         diary_dates = DiaryModel.objects.values_list('posted_date__date', flat=True).distinct()
->>>>>>> hyunmin
         date_list = [date.strftime('%Y-%m-%d') for date in diary_dates if date]
         
         return JsonResponse({

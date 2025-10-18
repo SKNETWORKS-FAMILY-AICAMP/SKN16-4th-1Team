@@ -159,11 +159,7 @@
         // --- 상태 관리 ---
         let currentDate = new Date();
         let selectedDate = new Date();
-<<<<<<< HEAD
-        let diaryDates = []; // 서버에서 가져올 일기 날짜들
-=======
         let diaryDates = [];
->>>>>>> hyunmin
 
         // --- 요소 찾기 ---
         const dateDisplayText = document.getElementById('date-display-text');
@@ -297,10 +293,7 @@
             gridEl.innerHTML = '';
             const firstDay = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
-<<<<<<< HEAD
-=======
             
->>>>>>> hyunmin
             for (let i = 0; i < firstDay; i++) { 
                 gridEl.appendChild(document.createElement('div')); 
             }
