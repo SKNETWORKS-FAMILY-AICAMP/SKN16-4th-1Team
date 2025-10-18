@@ -17,4 +17,8 @@ urlpatterns = [
     
     path('api/diary/dates/', views.get_diary_dates, name='get_diary_dates'),
     path('api/diary/<str:date_str>/', views.get_diary_by_date, name='get_diary_by_date'),
+<<<<<<< HEAD
+=======
+    
+>>>>>>> hyunmin
 ]

@@ -32,8 +32,7 @@ def entry(request):
 
             todays_diary.save()
 
-            # 저장 직후 동일 페이지에서 이미지 생성 트리거를 위해 id 전달
-            form = AddForm()  # 새 폼으로 초기화
+            form = AddForm()
             return render(
                 request,
                 'entry/add.html',
@@ -46,7 +45,6 @@ def entry(request):
                 }
             )
 
-        # 유효하지 않으면 그대로 다시 렌더
         return render(
             request,
             'entry/add.html',
@@ -71,10 +69,6 @@ def entry(request):
 
 
 def show(request):
-    """
-        We need to show the diaries sorted by date posted in descending order
-        5:32 PM 10/19/19 by Arjun Adhikari
-    """
     diaries = DiaryModel.objects.order_by('posted_date')
     icon = True if len(diaries) == 0 else None
 
@@ -107,11 +101,6 @@ def detail(request, diary_id):
 
 
 def productivity(request):
-    
-    """
-        At max, draw chart for last 10 data.
-        11:24 PM 10/19/19 by Arjun Adhikari
-    """
     data = DiaryModel.objects.order_by('posted_date')[:10]
     icon = True if len(data) == 0 else None
 
@@ -131,7 +120,6 @@ def generate_image(request, diary_id):
     if request.method != 'POST':
         return JsonResponse({'error': 'POST required'}, status=405)
 
-    # OpenAI 파이프라인 실행 후 임시 URL을 모델에 저장
     try:
         from .Image_making.pipeline import generate_and_attach_image_to_diary
 
@@ -143,16 +131,12 @@ def generate_image(request, diary_id):
 
 
 def save_image(request, diary_id):
-    """
-    temp_image_url의 이미지를 S3에 업로드하고 image_url에 저장
-    """
     if request.method != 'POST':
         return JsonResponse({'error': 'POST required'}, status=405)
 
     try:
         from .Image_making.pipeline import save_temp_image_to_s3
 
-        # S3에 업로드하고 URL 반환
         s3_url = save_temp_image_to_s3(diary_id)
 
         if s3_url:
@@ -165,6 +149,7 @@ def save_image(request, diary_id):
 
 @require_http_methods(["GET"])
 def get_diary_by_date(request, date_str):
+<<<<<<< HEAD
     """
     특정 날짜의 일기 조회
     URL: /api/diary/<date_str>/
@@ -177,6 +162,11 @@ def get_diary_by_date(request, date_str):
         target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
         
         # ⭐ 해당 날짜의 일기 조회 (image_url 여부 상관없이 조회)
+=======
+    try:
+        target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        
+>>>>>>> hyunmin
         diary = DiaryModel.objects.filter(
             posted_date__date=target_date
         ).order_by('-posted_date').first()
@@ -194,7 +184,11 @@ def get_diary_by_date(request, date_str):
                     'note': diary.note,
                     'content': diary.content,
                     'productivity': diary.productivity,
+<<<<<<< HEAD
                     'image_url': diary.image_url if diary.image_url else None,  # 있으면 S3 URL, 없으면 null
+=======
+                    'image_url': diary.image_url if diary.image_url else None,
+>>>>>>> hyunmin
                     'posted_date': diary.posted_date.strftime('%Y-%m-%d %H:%M:%S')
                 }
             })
@@ -223,6 +217,7 @@ def get_diary_by_date(request, date_str):
 
 @require_http_methods(["GET"])
 def get_diary_dates(request):
+<<<<<<< HEAD
     """
     일기가 작성된 모든 날짜 목록 조회
     URL: /api/diary/dates/
@@ -232,6 +227,10 @@ def get_diary_dates(request):
         diary_dates = DiaryModel.objects.values_list('posted_date__date', flat=True).distinct()
         
         # date 객체를 문자열로 변환
+=======
+    try:
+        diary_dates = DiaryModel.objects.values_list('posted_date__date', flat=True).distinct()
+>>>>>>> hyunmin
         date_list = [date.strftime('%Y-%m-%d') for date in diary_dates if date]
         
         return JsonResponse({
@@ -267,7 +266,7 @@ def login_view(request):
 def logout_view(request):
     logout(request)
     return redirect('login')
-    
+
 def signup_view(request):
     return render(request, 'entry/signup.html')
 

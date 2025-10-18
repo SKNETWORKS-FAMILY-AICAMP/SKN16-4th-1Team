@@ -126,7 +126,6 @@
                     <div class="form-group mb-3"><label class="form-label">제목</label><input type="text" name="note" class="form-control" placeholder="이 날을 한 줄로" required></div>
                     <div class="form-group mb-3"><label class="form-label">내용</label><textarea name="content" id="diary-content" rows="10" class="form-control" placeholder="일기를 입력하세요" required></textarea></div>
                     <div class="form-group mb-3"><label class="form-label">오늘의 생산성</label><input type="range" name="productivity" min="0" max="10" value="5" step="1" class="form-control"></div>
-                    <!-- 네컷 스타일 선택 버튼 -->
                     <div class="theme-btn-group mb-3" id="theme-selector">
                      <button type="button" class="theme-btn active" data-theme="Theme1">Theme1</button>
                      <button type="button" class="theme-btn" data-theme="Theme2">Theme2</button>
@@ -160,7 +159,11 @@
         // --- 상태 관리 ---
         let currentDate = new Date();
         let selectedDate = new Date();
+<<<<<<< HEAD
         let diaryDates = []; // 서버에서 가져올 일기 날짜들
+=======
+        let diaryDates = [];
+>>>>>>> hyunmin
 
         // --- 요소 찾기 ---
         const dateDisplayText = document.getElementById('date-display-text');
@@ -286,6 +289,7 @@
             renderCalendar('sidebar', currentDate.getFullYear(), currentDate.getMonth());
             renderCalendar('main', currentDate.getFullYear(), currentDate.getMonth());
         }
+
         function renderCalendar(type, year, month) {
             const titleEl = document.getElementById(`calendar-title-${type}`);
             const gridEl = document.getElementById(`calendar-grid-${type}`);
@@ -293,6 +297,10 @@
             gridEl.innerHTML = '';
             const firstDay = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
+<<<<<<< HEAD
+=======
+            
+>>>>>>> hyunmin
             for (let i = 0; i < firstDay; i++) { 
                 gridEl.appendChild(document.createElement('div')); 
             }
@@ -322,6 +330,7 @@
                     
                     if (type === 'main') calendarModalMain.classList.remove('open');
                 });
+                
                 gridEl.appendChild(dayEl);
             }
         }
@@ -405,7 +414,6 @@
                     saveBtn.classList.remove('btn-success');
                     saveBtn.classList.add('btn-secondary');
                     
-                    // 상세보기 링크 활성화
                     detailLink.classList.remove('disabled');
                     detailLink.removeAttribute('tabindex');
                     detailLink.removeAttribute('aria-disabled');
