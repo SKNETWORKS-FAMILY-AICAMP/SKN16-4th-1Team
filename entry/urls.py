@@ -14,4 +14,7 @@ urlpatterns = [
     path('accounts/signup/', views.signup_view, name='signup'),
     path('accounts/profile/', views.profile_view, name='profile'),
     path('accounts/settings/', views.settings_view, name='settings'),
+    
+    path('api/diary/dates/', views.get_diary_dates, name='get_diary_dates'),
+    path('api/diary/<str:date_str>/', views.get_diary_by_date, name='get_diary_by_date'),
 ]

@@ -2,6 +2,7 @@ from datetime import datetime
 
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import render, get_object_or_404, redirect
+from django.views.decorators.http import require_http_methods
 
 from .forms import AddForm
 from .models import DiaryModel
@@ -160,6 +161,89 @@ def save_image(request, diary_id):
             return JsonResponse({'status': 'error', 'message': 'S3 upload failed'}, status=500)
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@require_http_methods(["GET"])
+def get_diary_by_date(request, date_str):
+    """
+    특정 날짜의 일기 조회
+    URL: /api/diary/<date_str>/
+    예: /api/diary/2025-10-18/
+    """
+    try:
+        from datetime import datetime
+        
+        # 날짜 문자열을 date 객체로 변환
+        target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        
+        # ⭐ 해당 날짜의 일기 조회 (image_url 여부 상관없이 조회)
+        diary = DiaryModel.objects.filter(
+            posted_date__date=target_date
+        ).order_by('-posted_date').first()
+        
+        if diary:
+            print(f"[API] ✅ 일기 발견")
+            print(f"[API] ID: {diary.id}")
+            print(f"[API] 제목: {diary.note}")
+            print(f"[API] S3 이미지 URL: {diary.image_url if diary.image_url else '없음'}")
+            
+            return JsonResponse({
+                'status': 'ok',
+                'data': {
+                    'id': diary.id,
+                    'note': diary.note,
+                    'content': diary.content,
+                    'productivity': diary.productivity,
+                    'image_url': diary.image_url if diary.image_url else None,  # 있으면 S3 URL, 없으면 null
+                    'posted_date': diary.posted_date.strftime('%Y-%m-%d %H:%M:%S')
+                }
+            })
+        else:
+            print(f"[API] ⚠️ 해당 날짜에 일기 없음")
+            return JsonResponse({
+                'status': 'empty',
+                'message': '해당 날짜에 작성된 일기가 없습니다.'
+            })
+            
+    except ValueError as e:
+        print(f"[API] ❌ 날짜 형식 오류: {e}")
+        return JsonResponse({
+            'status': 'error',
+            'message': '잘못된 날짜 형식입니다.'
+        }, status=400)
+    except Exception as e:
+        import traceback
+        print("[API] ❌ 예외 발생:")
+        print(traceback.format_exc())
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)
+
+
+@require_http_methods(["GET"])
+def get_diary_dates(request):
+    """
+    일기가 작성된 모든 날짜 목록 조회
+    URL: /api/diary/dates/
+    """
+    try:
+        # 모든 일기의 날짜 조회 (posted_date__date로 날짜만 추출)
+        diary_dates = DiaryModel.objects.values_list('posted_date__date', flat=True).distinct()
+        
+        # date 객체를 문자열로 변환
+        date_list = [date.strftime('%Y-%m-%d') for date in diary_dates if date]
+        
+        return JsonResponse({
+            'status': 'ok',
+            'dates': date_list
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)
 
 
 def login_view(request):
