@@ -1,11 +1,13 @@
 from datetime import datetime
 
 from django.http import HttpResponseRedirect, JsonResponse
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import render, get_object_or_404, redirect
 
 from .forms import AddForm
 from .models import DiaryModel
 
+from django.contrib.auth.models import User
+from django.contrib.auth import login, logout
 
 def entry(request):
     form = AddForm(request.POST or None)
@@ -158,3 +160,35 @@ def save_image(request, diary_id):
             return JsonResponse({'status': 'error', 'message': 'S3 upload failed'}, status=500)
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+def login_view(request):
+    if request.method == 'POST':
+        email_from_form = request.POST.get('username')
+        password_from_form = request.POST.get('password')
+        
+        try:
+            user_obj = User.objects.get(email=email_from_form)
+            
+            if user_obj.check_password(password_from_form):
+                login(request, user_obj)
+                return redirect('entry')
+            else:
+                return render(request, 'entry/login.html', {'error': '비밀번호를 잘못 입력했습니다.'})
+        except User.DoesNotExist:
+            return render(request, 'entry/login.html', {'error': '존재하지 않는 아이디(이메일)입니다.'})
+    else:
+        return render(request, 'entry/login.html')
+
+def logout_view(request):
+    logout(request)
+    return redirect('login')
+    
+def signup_view(request):
+    return render(request, 'entry/signup.html')
+
+def profile_view(request):
+    return render(request, 'entry/profile.html')
+
+def settings_view(request):
+    return render(request, 'entry/settings.html')
