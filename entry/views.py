@@ -2,6 +2,7 @@ from datetime import datetime
 
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import render, get_object_or_404, redirect
+from django.views.decorators.http import require_http_methods
 
 from .forms import AddForm
 from .models import DiaryModel
@@ -31,8 +32,7 @@ def entry(request):
 
             todays_diary.save()
 
-            # 저장 직후 동일 페이지에서 이미지 생성 트리거를 위해 id 전달
-            form = AddForm()  # 새 폼으로 초기화
+            form = AddForm()
             return render(
                 request,
                 'entry/add.html',
@@ -45,7 +45,6 @@ def entry(request):
                 }
             )
 
-        # 유효하지 않으면 그대로 다시 렌더
         return render(
             request,
             'entry/add.html',
@@ -70,10 +69,6 @@ def entry(request):
 
 
 def show(request):
-    """
-        We need to show the diaries sorted by date posted in descending order
-        5:32 PM 10/19/19 by Arjun Adhikari
-    """
     diaries = DiaryModel.objects.order_by('posted_date')
     icon = True if len(diaries) == 0 else None
 
@@ -106,11 +101,6 @@ def detail(request, diary_id):
 
 
 def productivity(request):
-    
-    """
-        At max, draw chart for last 10 data.
-        11:24 PM 10/19/19 by Arjun Adhikari
-    """
     data = DiaryModel.objects.order_by('posted_date')[:10]
     icon = True if len(data) == 0 else None
 
@@ -130,7 +120,6 @@ def generate_image(request, diary_id):
     if request.method != 'POST':
         return JsonResponse({'error': 'POST required'}, status=405)
 
-    # OpenAI 파이프라인 실행 후 임시 URL을 모델에 저장
     try:
         from .Image_making.pipeline import generate_and_attach_image_to_diary
 
@@ -142,16 +131,12 @@ def generate_image(request, diary_id):
 
 
 def save_image(request, diary_id):
-    """
-    temp_image_url의 이미지를 S3에 업로드하고 image_url에 저장
-    """
     if request.method != 'POST':
         return JsonResponse({'error': 'POST required'}, status=405)
 
     try:
         from .Image_making.pipeline import save_temp_image_to_s3
 
-        # S3에 업로드하고 URL 반환
         s3_url = save_temp_image_to_s3(diary_id)
 
         if s3_url:
@@ -160,6 +145,73 @@ def save_image(request, diary_id):
             return JsonResponse({'status': 'error', 'message': 'S3 upload failed'}, status=500)
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@require_http_methods(["GET"])
+def get_diary_by_date(request, date_str):
+    try:
+        target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
+        
+        diary = DiaryModel.objects.filter(
+            posted_date__date=target_date
+        ).order_by('-posted_date').first()
+        
+        if diary:
+            print(f"[API] ✅ 일기 발견")
+            print(f"[API] ID: {diary.id}")
+            print(f"[API] 제목: {diary.note}")
+            print(f"[API] S3 이미지 URL: {diary.image_url if diary.image_url else '없음'}")
+            
+            return JsonResponse({
+                'status': 'ok',
+                'data': {
+                    'id': diary.id,
+                    'note': diary.note,
+                    'content': diary.content,
+                    'productivity': diary.productivity,
+                    'image_url': diary.image_url if diary.image_url else None,
+                    'posted_date': diary.posted_date.strftime('%Y-%m-%d %H:%M:%S')
+                }
+            })
+        else:
+            print(f"[API] ⚠️ 해당 날짜에 일기 없음")
+            return JsonResponse({
+                'status': 'empty',
+                'message': '해당 날짜에 작성된 일기가 없습니다.'
+            })
+            
+    except ValueError as e:
+        print(f"[API] ❌ 날짜 형식 오류: {e}")
+        return JsonResponse({
+            'status': 'error',
+            'message': '잘못된 날짜 형식입니다.'
+        }, status=400)
+    except Exception as e:
+        import traceback
+        print("[API] ❌ 예외 발생:")
+        print(traceback.format_exc())
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)
+
+
+@require_http_methods(["GET"])
+def get_diary_dates(request):
+    try:
+        diary_dates = DiaryModel.objects.values_list('posted_date__date', flat=True).distinct()
+        date_list = [date.strftime('%Y-%m-%d') for date in diary_dates if date]
+        
+        return JsonResponse({
+            'status': 'ok',
+            'dates': date_list
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)
 
 
 def login_view(request):
@@ -183,7 +235,7 @@ def login_view(request):
 def logout_view(request):
     logout(request)
     return redirect('login')
-    
+
 def signup_view(request):
     return render(request, 'entry/signup.html')
 
