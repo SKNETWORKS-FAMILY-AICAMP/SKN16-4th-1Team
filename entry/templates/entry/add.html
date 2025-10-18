@@ -173,12 +173,32 @@
   }
 
   if (saveImageBtn) {
-    saveImageBtn.addEventListener('click', () => {
+    saveImageBtn.addEventListener('click', async () => {
       if (!NEW_DIARY_ID) return;
-      finalizeImage(NEW_DIARY_ID);
+      
+      saveImageBtn.disabled = true;
+      saveImageBtn.textContent = '저장 중...';
+      
+      try {
+        const resp = await fetch(`{% url 'save_image' 0 %}`.replace('/0/', `/${NEW_DIARY_ID}/`), {
+          method: 'POST',
+          headers: { 'X-CSRFToken': getCookie('csrftoken') || '' }
+        });
+        const data = await resp.json();
+        
+        if (data.status === 'ok') {
+          saveImageBtn.textContent = '저장 완료!';
+          // 성공 처리
+        } else {
+          throw new Error('S3 저장 실패');
+        }
+      } catch (e) {
+        console.error(e);
+        saveImageBtn.disabled = false;
+        saveImageBtn.textContent = 'Save';
+        alert('S3 저장 중 오류가 발생했습니다. 다시 시도해주세요.');
+      }
     });
   }
 </script>
 {% endblock %}
-
-

@@ -19,4 +19,5 @@ urlpatterns = [
     path('productivity/', views.productivity, name='productivity'),
     path('generate-image/<int:diary_id>/', views.generate_image, name='generate_image'),
     path('finalize-image/<int:diary_id>/', views.finalize_image, name='finalize_image'),
+    path('save-image/<int:diary_id>/', views.save_image, name='save_image'),  # 이 줄 추가
 ]

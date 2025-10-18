@@ -3,4 +3,3 @@ from .models import DiaryModel
 
 # Register your models here.
 admin.site.register(DiaryModel)
-

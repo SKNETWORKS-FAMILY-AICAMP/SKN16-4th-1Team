@@ -70,6 +70,12 @@ class SignupForm(forms.Form):
         widget=forms.PasswordInput(attrs={'class': 'form-control'}),
         help_text=password_validators_help_text_html(),
     )
+
+    password_confirm = forms.CharField(  # 이 필드 추가
+        label='비밀번호 확인',
+        widget=forms.PasswordInput(attrs={'class': 'form-control'}),
+    )
+
     name = forms.CharField(
         label='이름',
         max_length=150,
@@ -113,6 +119,16 @@ class SignupForm(forms.Form):
         password = self.cleaned_data['password']
         validate_password(password)
         return password
+
+    def clean(self):
+        cleaned_data = super().clean()
+        password = cleaned_data.get('password')
+        password_confirm = cleaned_data.get('password_confirm')
+        
+        if password and password_confirm and password != password_confirm:
+            raise forms.ValidationError('비밀번호가 일치하지 않아요.')
+        
+        return cleaned_data
 
 
 class LoginForm(AuthenticationForm):

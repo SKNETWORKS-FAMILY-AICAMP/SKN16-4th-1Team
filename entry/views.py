@@ -20,7 +20,6 @@ def entry(request):
     form = AddForm(request.POST or None)
 
     if request.method == 'POST':
-
         if form.is_valid():
             note = request.POST['note']
             content = request.POST['content']
@@ -28,14 +27,14 @@ def entry(request):
             productivity = request.POST['productivity']
             image_url = request.POST.get('image_url', '').strip()
 
-            todays_diary = DiaryModel()
-            todays_diary.note = note
-            todays_diary.posted_date = posted_date
-            todays_diary.content = content
-            todays_diary.productivity = productivity
+            todays_diary = DiaryModel(
+                note=note,
+                content=content,
+                posted_date=posted_date,
+                productivity=productivity,
+            )
             if image_url:
                 todays_diary.image_url = image_url
-
             todays_diary.save()
 
             # Pass diary id so the template can immediately trigger image generation
@@ -47,9 +46,9 @@ def entry(request):
                     'title': 'Add Entry',
                     'subtitle': "Add what you feel and we'll store it for you.",
                     'add_highlight': True,
-                    'addform': form,
+                    'form': form,
                     'new_diary_id': todays_diary.id,
-                }
+                },
             )
 
         # Invalid form: re-render page with errors
@@ -60,8 +59,8 @@ def entry(request):
                 'title': 'Add Entry',
                 'subtitle': "Add what you feel and we'll store it for you.",
                 'add_highlight': True,
-                'addform': form,
-            }
+                'form': form,
+            },
         )
 
     return render(
@@ -69,18 +68,14 @@ def entry(request):
         'entry/add.html',
         {
             'title': 'Add Entry',
-            'subtitle': 'Add what you feel and we\'ll store it for you.',
+            'subtitle': "Add what you feel and we'll store it for you.",
             'add_highlight': True,
-            'addform': form,
-        }
+            'form': form,
+        },
     )
 
 
 def show(request):
-    """
-        We need to show the diaries sorted by date posted in descending order
-        5:32 PM 10/19/19 by Arjun Adhikari
-    """
     diaries = DiaryModel.objects.order_by('posted_date')
     icon = True if len(diaries) == 0 else None
 
@@ -90,10 +85,10 @@ def show(request):
         {
             'show_highlight': True,
             'title': 'All Entries',
-            'subtitle': 'It\'s all you\'ve written.',
+            'subtitle': "It's all you've written.",
             'diaries': reversed(diaries),
-            'icon': icon
-        }
+            'icon': icon,
+        },
     )
 
 
@@ -107,17 +102,12 @@ def detail(request, diary_id):
             'show_highlight': True,
             'title': diary.note,
             'subtitle': diary.posted_date,
-            'diary': diary
-        }
+            'diary': diary,
+        },
     )
 
 
 def productivity(request):
-    
-    """
-        At max, draw chart for last 10 data.
-        11:24 PM 10/19/19 by Arjun Adhikari
-    """
     data = DiaryModel.objects.order_by('posted_date')[:10]
     icon = True if len(data) == 0 else None
 
@@ -128,8 +118,8 @@ def productivity(request):
             'title': 'Productivity Chart',
             'subtitle': 'Keep the line heading up always.',
             'data': data,
-            'icon': icon
-        }
+            'icon': icon,
+        },
     )
 
 
@@ -183,13 +173,13 @@ def finalize_image(request, diary_id):
     diary.temp_image_url = None
     diary.save(update_fields=['image_url', 'temp_image_url'])
 
-    return JsonResponse({
-        'status': 'ok',
-        'image_url': final_url,
-        'detail_url': reverse('detail', args=[diary.id]),
-    })
-
-
+    return JsonResponse(
+        {
+            'status': 'ok',
+            'image_url': final_url,
+            'detail_url': reverse('detail', args=[diary.id]),
+        }
+    )
 
 
 def signup(request):
@@ -219,5 +209,55 @@ def signup(request):
             'title': '회원가입',
             'subtitle': '새로운 일기장을 시작해 보세요.',
             'form': form,
-        }
+        },
     )
+
+@require_POST
+def save_image(request, diary_id):
+    """S3에 임시 이미지를 정식 저장하고 임시 파일 삭제"""
+    try:
+        # 1. DiaryModel 조회
+        diary = get_object_or_404(DiaryModel, pk=diary_id)
+        
+        if not diary.temp_image_url:
+            return JsonResponse({
+                'status': 'error',
+                'message': '임시 이미지가 없습니다. 먼저 이미지를 생성해주세요.'
+            }, status=400)
+        
+        # 2. S3에 업로드
+        from .Image_making.pipeline import save_temp_image_to_s3
+        s3_url = save_temp_image_to_s3(diary_id)
+        
+        if not s3_url:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'S3 업로드에 실패했습니다. 네트워크 연결을 확인하거나 나중에 다시 시도해주세요.'
+            }, status=500)
+        
+        # 3. 성공 시 임시 파일 삭제
+        temp_path = None
+        if diary.temp_image_url:
+            temp_path = _resolve_media_path(diary.temp_image_url)
+            
+        # 4. 임시 URL 제거 (DB에서)
+        diary.temp_image_url = None
+        diary.save(update_fields=['temp_image_url'])
+        
+        # 5. 로컬 임시 파일 삭제
+        if temp_path and temp_path.exists():
+            temp_path.unlink()  # 파일 삭제
+        
+        return JsonResponse({
+            'status': 'ok',
+            'image_url': s3_url,
+            'message': '이미지가 S3에 성공적으로 저장되었습니다.',
+            'detail_url': reverse('detail', args=[diary_id])
+        })
+        
+    except Exception as e:
+        # 예상치 못한 오류 발생
+        return JsonResponse({
+            'status': 'error',
+            'message': f'저장 중 오류가 발생했습니다: {str(e)}. 다시 시도해주세요.'
+        }, status=500)
