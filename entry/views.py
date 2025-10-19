@@ -1,14 +1,17 @@
 from datetime import datetime
+import json
 
 from django.http import HttpResponseRedirect, JsonResponse
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.decorators.http import require_http_methods
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.models import User
+from django.contrib.auth import authenticate, login, logout
+from django.contrib import messages
 
 from .forms import AddForm
 from .models import DiaryModel
 
-from django.contrib.auth.models import User
-from django.contrib.auth import login, logout
 
 def entry(request):
     form = AddForm(request.POST or None)
@@ -232,15 +235,124 @@ def login_view(request):
     else:
         return render(request, 'entry/login.html')
 
+
 def logout_view(request):
     logout(request)
     return redirect('login')
 
-def signup_view(request):
+
+def signup(request):
+    if request.method == 'POST':
+        nickname = request.POST.get('nickname', '').strip()
+        email = request.POST.get('email', '').strip()
+        password = request.POST.get('password', '').strip()
+        
+        print(f"[SIGNUP] 닉네임: {nickname}")
+        print(f"[SIGNUP] 이메일: {email}")
+        
+        # 입력값 검증
+        if not email or not password:
+            messages.error(request, '이메일과 비밀번호를 입력해주세요.')
+            return render(request, 'entry/signup.html')
+        
+        try:
+            # 이메일 중복 확인
+            if User.objects.filter(email=email).exists():
+                messages.error(request, '이미 사용 중인 이메일입니다.')
+                return render(request, 'entry/signup.html')
+            
+            # 회원가입 처리
+            user = User.objects.create_user(
+                username=email,  # username으로 email 사용
+                email=email,
+                password=password
+            )
+            
+            # 닉네임 저장
+            if nickname:
+                user.first_name = nickname
+                user.save()
+            
+            print(f"[SIGNUP] ✅ 회원가입 성공! User ID: {user.id}")
+            
+            # ✅ 성공 메시지 + 로그인 페이지로 리다이렉트
+            messages.success(request, '회원가입이 완료되었습니다!')
+            return redirect('login')
+            
+        except Exception as e:
+            print(f"[SIGNUP] ❌ 에러: {e}")
+            import traceback
+            traceback.print_exc()
+            messages.error(request, f'회원가입 중 오류가 발생했습니다: {str(e)}')
+            return render(request, 'entry/signup.html')
+    
+    # GET 요청
     return render(request, 'entry/signup.html')
+
 
 def profile_view(request):
     return render(request, 'entry/profile.html')
 
+
 def settings_view(request):
     return render(request, 'entry/settings.html')
+
+
+# ✅ API 함수들
+@login_required
+def diary_dates_api(request):
+    """사용자의 모든 일기 작성 날짜를 반환"""
+    try:
+        diary_dates = DiaryModel.objects.values_list('posted_date__date', flat=True).distinct()
+        dates = [str(date) for date in diary_dates if date]
+        
+        return JsonResponse({
+            'status': 'ok',
+            'dates': dates
+        })
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)
+
+
+@login_required
+def diary_by_date_api(request, date):
+    """특정 날짜의 일기 데이터를 반환"""
+    try:
+        target_date = datetime.strptime(date, '%Y-%m-%d').date()
+        
+        diary = DiaryModel.objects.filter(
+            posted_date__date=target_date
+        ).order_by('-posted_date').first()
+        
+        if diary:
+            print(f"[API] ✅ 일기 발견")
+            print(f"[API] ID: {diary.id}")
+            print(f"[API] 제목: {diary.note}")
+            print(f"[API] S3 이미지 URL: {diary.image_url if diary.image_url else '없음'}")
+            
+            return JsonResponse({
+                'status': 'ok',
+                'data': {
+                    'id': diary.id,
+                    'note': diary.note,
+                    'content': diary.content,
+                    'productivity': diary.productivity,
+                    'image_url': diary.image_url if diary.image_url else None,
+                    'date': diary.posted_date.strftime('%Y-%m-%d')
+                }
+            })
+        else:
+            return JsonResponse({
+                'status': 'empty',
+                'message': '해당 날짜의 일기가 없습니다.'
+            })
+            
+    except Exception as e:
+        print(f"[API] ❌ 에러: {str(e)}")
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)
