@@ -109,7 +109,6 @@
                     {% csrf_token %}
                     <div class="form-group mb-3"><label class="form-label">제목</label><input type="text" name="note" class="form-control" placeholder="이 날을 한 줄로" required></div>
                     <div class="form-group mb-3"><label class="form-label">내용</label><textarea name="content" id="diary-content" rows="10" class="form-control" placeholder="일기를 입력하세요" required></textarea></div>
-                    <div class="form-group mb-3"><label class="form-label">오늘의 생산성</label><input type="range" name="productivity" min="0" max="10" value="5" step="1" class="form-control"></div>
                     <div class="theme-btn-group mb-3" id="theme-selector">
                      <button type="button" class="theme-btn active" data-theme="Theme1">simple</button>
                      <button type="button" class="theme-btn" data-theme="Theme2">ani</button>
