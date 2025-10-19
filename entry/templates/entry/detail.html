@@ -1,16 +1,297 @@
 {% extends 'entry/base.html' %}
 {% load static %}
+
+{% block title %}{{ diary.posted_date|date:"Y-m-d" }} 일기{% endblock %}
+
+{% block navbar %}
+<!-- navbar 숨김 -->
+{% endblock %}
+
+{% block header %}
+<!-- header 숨김 -->
+{% endblock %}
+
 {% block content %}
-    <div class="container">
-        {% if diary.image_url %}
-            <div class="mb-3">
-                <img src="{{ diary.image_url }}" alt="Diary Image" class="img-fluid" />
-            </div>
-        {% endif %}
-        {% autoescape off %}
-            {{ diary.content }}
-        {% endautoescape %}
+
+
+<style>
+<style>
+    /* === 기본 레이아웃 === */
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans KR', sans-serif;
+        background-color: #f5f5f5;
+    }
+    html.dark body { 
+        background-color: #111827;
+    }
+
+    /* === 상단 헤더 === */
+    .top-header {
+        background: white;
+        border-bottom: 1px solid #e5e7eb;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.5rem 2rem;
+        margin-bottom: 2rem;
+    }
+    html.dark .top-header {
+        background: #1f2937;
+        border-bottom-color: #374151;
+    }
+
+    .header-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin: 0;
+    }
+    html.dark .header-title {
+        color: #f9fafb;
+    }
+
+    .close-btn {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: #6b7280;
+        transition: color 0.2s;
+    }
+    .close-btn:hover {
+        color: #1f2937;
+    }
+
+    /* === 메인 컨텐츠 === */
+    .main-content { 
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0 2rem 2rem;
+    }
+
+    .date-header {
+        text-align: center;
+        margin-bottom: 2rem;
+        padding: 1.5rem;
+        background: white;
+        border-radius: 0.5rem;
+        border: 1px solid #e5e7eb;
+    }
+    html.dark .date-header {
+        background: #1f2937;
+        border-color: #374151;
+    }
+
+    .date-text {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1f2937;
+    }
+    html.dark .date-text {
+        color: #f9fafb;
+    }
+
+    .content-wrapper {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 2rem;
+        margin-bottom: 2rem;
+    }
+
+    /* === 왼쪽: 네컷 일기 이미지 === */
+    .image-panel {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        padding: 2rem;
+    }
+    html.dark .image-panel {
+        background: #1f2937;
+        border-color: #374151;
+    }
+
+    .panel-title {
+        font-size: 1.125rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        color: #1f2937;
+        text-align: center;
+    }
+    html.dark .panel-title {
+        color: #f9fafb;
+    }
+
+    .image-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 400px;
+    }
+
+    .diary-image {
+        max-width: 100%;
+        height: auto;
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    /* === 오른쪽: 일기 본문 === */
+    .content-panel {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        padding: 2rem;
+    }
+    html.dark .content-panel {
+        background: #1f2937;
+        border-color: #374151;
+    }
+
+    .diary-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 1rem;
+        color: #1f2937;
+        border-bottom: 2px solid #e5e7eb;
+        padding-bottom: 0.75rem;
+    }
+    html.dark .diary-title {
+        color: #f9fafb;
+        border-bottom-color: #374151;
+    }
+
+    .diary-content {
+        font-size: 1rem;
+        line-height: 1.8;
+        color: #374151;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+    html.dark .diary-content {
+        color: #d1d5db;
+    }
+
+    /* === 다운로드 버튼 === */
+    .download-section {
+        text-align: center;
+    }
+
+    .download-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.875rem 2rem;
+        background: #3b82f6;
+        color: white;
+        border: none;
+        border-radius: 0.5rem;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: background-color 0.2s;
+        box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+    }
+    .download-btn:hover {
+        background: #2563eb;
+    }
+
+    /* === 반응형 === */
+    @media (max-width: 992px) {
+        .content-wrapper {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<!-- 상단 헤더 -->
+<header class="top-header">
+    <h1 class="header-title">일기 상세보기</h1>
+    <button class="close-btn" onclick="window.history.back();">✕</button>
+</header>
+
+<!-- 메인 컨텐츠 -->
+<main class="main-content">
+    <!-- 날짜 헤더 -->
+    <div class="date-header">
+        <div class="date-text">{{ diary.posted_date|date:"Y년 m월 d일" }}</div>
     </div>
 
+    <!-- 이미지 + 본문 -->
+    <div class="content-wrapper">
+        <!-- 왼쪽: 네컷 일기 이미지 -->
+        <div class="image-panel">
+            <h2 class="panel-title">네컷 일기</h2>
+            {% if diary.image_url %}
+                <div class="image-container">
+                    <img src="{{ diary.image_url }}" alt="Diary Image" class="diary-image" id="diary-image" />
+                </div>
+            {% else %}
+                <div class="image-container">
+                    <p style="color: #9ca3af;">이미지가 저장되지 않았습니다.</p>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- 오른쪽: 일기 본문 -->
+        <div class="content-panel">
+            <h2 class="panel-title">일기 본문</h2>
+            {% if diary.note %}
+                <h3 class="diary-title">{{ diary.note }}</h3>
+            {% endif %}
+            <div class="diary-content">
+                {% autoescape off %}
+                    {{ diary.content }}
+                {% endautoescape %}
+            </div>
+        </div>
+    </div>
+
+    <!-- 다운로드 버튼 -->
+    <div class="download-section">
+        <button class="download-btn" id="download-btn">
+            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+            </svg>
+            다운로드
+        </button>
+    </div>
+</main>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const downloadBtn = document.getElementById('download-btn');
+        const diaryImage = document.getElementById('diary-image');
+        
+        downloadBtn.addEventListener('click', async function() {
+            if (!diaryImage) {
+                alert('다운로드할 이미지가 없습니다.');
+                return;
+            }
+            
+            try {
+                const imageUrl = diaryImage.src;
+                const response = await fetch(imageUrl, { mode: 'cors' });
+                
+                if (!response.ok) throw new Error('이미지를 가져올 수 없습니다.');
+                
+                const blob = await response.blob();
+                const blobUrl = window.URL.createObjectURL(blob);
+                
+                const link = document.createElement('a');
+                link.href = blobUrl;
+                link.download = '네컷일기_{{ diary.posted_date|date:"Ymd" }}.png';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                window.URL.revokeObjectURL(blobUrl);
+                alert('이미지가 다운로드되었습니다!');
+            } catch (error) {
+                console.error('다운로드 오류:', error);
+                alert('다운로드 중 오류가 발생했습니다.');
+            }
+        });
+    });
+</script>
 
 {% endblock %}
