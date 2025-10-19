@@ -25,12 +25,53 @@
       </form>
     </div>
 
-    <!-- 진행바 (중앙, 두 박스 사이) -->
-    <div class="col-md-2 d-flex align-items-center justify-content-center">
-      <div id="progress-wrapper" class="w-100" style="display: none;">
-        <div class="text-center mb-2">이미지 생성 중...</div>
-        <div class="progress" style="height: 10px;">
-          <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+    <main id="main-content" class="container main-content">
+        <div class="row">
+            <div class="col-md-5 border p-3 bg-white rounded shadow-sm">
+                <div class="date-display">
+                    <span id="date-display-text"></span>
+                    <button id="calendar-toggle-main" class="calendar-toggle-btn"><i data-lucide="calendar"></i></button>
+                    <div id="calendar-modal-main" class="calendar-modal">
+                        <div class="calendar-header">
+                            <button id="prev-month-main">&lt;</button>
+                            <h2 id="calendar-title-main"></h2>
+                            <button id="next-month-main">&gt;</button>
+                        </div>
+                        <div class="calendar-modal-grid" style="font-size: 0.9rem; color: #6b7280;">
+                           <div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div>
+                        </div>
+                        <div id="calendar-grid-main" class="calendar-modal-grid"></div>
+                    </div>
+                </div>
+                <h5 class="font-weight-bold">오늘의 일기</h5>
+                <form id="add-form" method="post" action="">
+                    {% csrf_token %}
+                    <div class="form-group mb-3"><label class="form-label">제목</label><input type="text" name="note" class="form-control" placeholder="이 날을 한 줄로" required></div>
+                    <div class="form-group mb-3"><label class="form-label">내용</label><textarea name="content" id="diary-content" rows="10" class="form-control" placeholder="일기를 입력하세요" required></textarea></div>
+                    <div class="theme-btn-group mb-3" id="theme-selector">
+                     <button type="button" class="theme-btn active" data-theme="Theme1">simple</button>
+                     <button type="button" class="theme-btn" data-theme="Theme2">ani</button>
+                     <button type="button" class="theme-btn" data-theme="Theme3">ai</button>
+                     <input type="hidden" name="theme" id="selected-theme" value="Theme1">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">오늘의 네컷 생성</button>
+                </form>
+            </div>
+            <div class="col-md-2 d-flex align-items-center justify-content-center">
+                <div id="progress-wrapper" class="w-100" style="display: none;"><div class="text-center mb-2">이미지 생성 중...</div><div class="progress" style="height: 10px;"><div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div></div></div>
+            </div>
+            <div class="col-md-5 border p-3 bg-white rounded shadow-sm">
+                <h5 class="font-weight-bold">오늘의 네컷 미리보기</h5>
+                <div class="border mb-3 d-flex justify-content-center align-items-center" style="height: 400px; background-color: #f8f9fa;">
+                    <img id="preview-image" src="" alt="미리보기" style="max-width: 100%; max-height: 100%; display: none;" />
+                    <span id="preview-placeholder" class="text-muted">네컷</span>
+                </div>
+                <div class="theme-btn-group mb-3">
+                    <button type="button" class="theme-btn" id="regenerate-btn" disabled>재생성</button>
+                    <button type="button" class="theme-btn btn-success" id="save-btn" disabled>저장</button>
+                    <a id="detail-link" class="theme-btn btn-outline-secondary disabled" href="#" tabindex="-1" aria-disabled="true">저장 확인</a>
+                </div>
+            </div>
         </div>
       </div>
     </div>
