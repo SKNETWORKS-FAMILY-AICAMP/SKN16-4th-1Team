@@ -126,7 +126,6 @@
                     <div class="form-group mb-3"><label class="form-label">제목</label><input type="text" name="note" class="form-control" placeholder="이 날을 한 줄로" required></div>
                     <div class="form-group mb-3"><label class="form-label">내용</label><textarea name="content" id="diary-content" rows="10" class="form-control" placeholder="일기를 입력하세요" required></textarea></div>
                     <div class="form-group mb-3"><label class="form-label">오늘의 생산성</label><input type="range" name="productivity" min="0" max="10" value="5" step="1" class="form-control"></div>
-                    <!-- 네컷 스타일 선택 버튼 -->
                     <div class="theme-btn-group mb-3" id="theme-selector">
                      <button type="button" class="theme-btn active" data-theme="Theme1">Theme1</button>
                      <button type="button" class="theme-btn" data-theme="Theme2">Theme2</button>
@@ -160,7 +159,7 @@
         // --- 상태 관리 ---
         let currentDate = new Date();
         let selectedDate = new Date();
-        const diaryDates = ['2025-10-05', '2025-10-12']; // 임시 일기 작성일
+        let diaryDates = [];
 
         // --- 요소 찾기 ---
         const dateDisplayText = document.getElementById('date-display-text');
@@ -168,18 +167,125 @@
         const calendarModalMain = document.getElementById('calendar-modal-main');
 
         // --- 함수 정의 ---
+        function getCookie(name) { 
+            const value = `; ${document.cookie}`; 
+            const parts = value.split(`; ${name}=`); 
+            if (parts.length === 2) return parts.pop().split(';').shift(); 
+        }
+
         function formatDate(date) {
             const year = date.getFullYear();
             const month = String(date.getMonth() + 1).padStart(2, '0');
             const day = String(date.getDate()).padStart(2, '0');
             return `${year}-${month}-${day}`;
         }
+
+        // === 서버에서 일기 날짜 목록 가져오기 ===
+        async function loadDiaryDates() {
+            try {
+                const response = await fetch('/api/diary/dates/', {
+                    method: 'GET',
+                    headers: { 'X-CSRFToken': getCookie('csrftoken') || '' }
+                });
+                const data = await response.json();
+                
+                if (data.status === 'ok') {
+                    diaryDates = data.dates;
+                    renderCalendar('sidebar', currentDate.getFullYear(), currentDate.getMonth());
+                    renderCalendar('main', currentDate.getFullYear(), currentDate.getMonth());
+                }
+            } catch (error) {
+                console.error('일기 날짜 목록 로드 실패:', error);
+            }
+        }
+
+        // === 특정 날짜의 일기 불러오기 ===
+        async function loadDiaryByDate(dateString) {
+            try {
+                const response = await fetch(`/api/diary/${dateString}/`, {
+                    method: 'GET',
+                    headers: { 'X-CSRFToken': getCookie('csrftoken') || '' }
+                });
+                const data = await response.json();
+                
+                if (data.status === 'ok') {
+                    const diary = data.data;
+                    
+                    // 폼에 일기 데이터 채우기
+                    document.querySelector('input[name="note"]').value = diary.note || '';
+                    document.querySelector('textarea[name="content"]').value = diary.content || '';
+                    document.querySelector('input[name="productivity"]').value = diary.productivity || 5;
+                    
+                    // ✅ S3에 저장된 image_url만 사용
+                    if (diary.image_url) {
+                        previewImage.src = diary.image_url;
+                        previewImage.style.display = 'block';
+                        previewPlaceholder.style.display = 'none';
+                        
+                        // 상세보기 링크 활성화
+                        detailLink.classList.remove('disabled');
+                        detailLink.removeAttribute('tabindex');
+                        detailLink.removeAttribute('aria-disabled');
+                        detailLink.href = `{% url 'detail' 0 %}`.replace('/0', `/${diary.id}`);
+                        
+                        // 이미 저장된 이미지이므로 저장 버튼 비활성화
+                        saveBtn.disabled = true;
+                        saveBtn.textContent = '저장 완료';
+                        saveBtn.classList.remove('btn-success');
+                        saveBtn.classList.add('btn-secondary');
+                        
+                        // 재생성 버튼 활성화
+                        regenerateBtn.disabled = false;
+                    } else {
+                        // 이미지 없으면 플레이스홀더
+                        clearPreview();
+                    }
+                    
+                    // 버튼 텍스트 변경
+                    document.querySelector('button[type="submit"]').textContent = '수정 & 카드 재제작';
+                    
+                } else if (data.status === 'empty') {
+                    // 일기가 없으면 폼 초기화
+                    clearForm();
+                }
+            } catch (error) {
+                console.error('일기 로드 실패:', error);
+            }
+        }
+
+        // === 폼 초기화 ===
+        function clearForm() {
+            document.querySelector('input[name="note"]').value = '';
+            document.querySelector('textarea[name="content"]').value = '';
+            document.querySelector('input[name="productivity"]').value = 5;
+            clearPreview();
+            document.querySelector('button[type="submit"]').textContent = '저장 & 카드 제작';
+        }
+
+        // === 미리보기 초기화 ===
+        function clearPreview() {
+            previewImage.style.display = 'none';
+            previewPlaceholder.style.display = 'block';
+            previewImage.src = '';
+            
+            detailLink.classList.add('disabled');
+            detailLink.setAttribute('tabindex', '-1');
+            detailLink.setAttribute('aria-disabled', 'true');
+            detailLink.href = '#';
+            
+            saveBtn.disabled = true;
+            saveBtn.textContent = '일기 저장';
+            saveBtn.classList.remove('btn-secondary');
+            saveBtn.classList.add('btn-success');
+        }
+
         function updateAllDisplays(newDate) {
             selectedDate = newDate;
             dateDisplayText.textContent = formatDate(selectedDate);
             renderCalendar('sidebar', currentDate.getFullYear(), currentDate.getMonth());
             renderCalendar('main', currentDate.getFullYear(), currentDate.getMonth());
         }
+
         function renderCalendar(type, year, month) {
             const titleEl = document.getElementById(`calendar-title-${type}`);
             const gridEl = document.getElementById(`calendar-grid-${type}`);
@@ -187,29 +293,42 @@
             gridEl.innerHTML = '';
             const firstDay = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
-            for (let i = 0; i < firstDay; i++) { gridEl.appendChild(document.createElement('div')); }
+            
+            for (let i = 0; i < firstDay; i++) { 
+                gridEl.appendChild(document.createElement('div')); 
+            }
+            
             for (let day = 1; day <= daysInMonth; day++) {
                 const dayEl = document.createElement('div');
                 dayEl.textContent = day;
                 const thisDate = new Date(year, month, day);
                 const thisDateString = formatDate(thisDate);
-                if (diaryDates.includes(thisDateString)) { dayEl.classList.add('has-diary'); }
-                if (formatDate(selectedDate) === thisDateString) { dayEl.classList.add('selected'); }
-                dayEl.addEventListener('click', () => {
-                    updateAllDisplays(thisDate);
+                
+                if (diaryDates.includes(thisDateString)) { 
+                    dayEl.classList.add('has-diary'); 
+                }
+                if (formatDate(selectedDate) === thisDateString) { 
+                    dayEl.classList.add('selected'); 
+                }
+                
+                // 날짜 클릭 시 해당 일기 불러오기
+                dayEl.addEventListener('click', async () => {
+                    selectedDate = thisDate;
+                    dateDisplayText.textContent = thisDateString;
+                    renderCalendar('sidebar', currentDate.getFullYear(), currentDate.getMonth());
+                    renderCalendar('main', currentDate.getFullYear(), currentDate.getMonth());
+                    
+                    // 해당 날짜의 일기 불러오기
+                    await loadDiaryByDate(thisDateString);
+                    
                     if (type === 'main') calendarModalMain.classList.remove('open');
                 });
+                
                 gridEl.appendChild(dayEl);
             }
         }
         
         // --- Main 기능: 이미지 생성 및 S3 저장 JavaScript ---
-        function getCookie(name) { 
-            const value = `; ${document.cookie}`; 
-            const parts = value.split(`; ${name}=`); 
-            if (parts.length === 2) return parts.pop().split(';').shift(); 
-        }
-        
         const progressWrapper = document.getElementById('progress-wrapper'); 
         const progressBar = document.getElementById('progress-bar'); 
         const previewImage = document.getElementById('preview-image'); 
@@ -269,7 +388,7 @@
             if (NEW_DIARY_ID) startGeneration(NEW_DIARY_ID);
         });
         
-        // S3 저장 버튼: temp_image_url을 S3에 업로드
+        // S3 저장 버튼
         saveBtn && saveBtn.addEventListener('click', async () => {
             if (!NEW_DIARY_ID) return;
             
@@ -288,13 +407,15 @@
                     saveBtn.classList.remove('btn-success');
                     saveBtn.classList.add('btn-secondary');
                     
-                    // 상세보기 링크 활성화
                     detailLink.classList.remove('disabled');
                     detailLink.removeAttribute('tabindex');
                     detailLink.removeAttribute('aria-disabled');
                     detailLink.href = `{% url 'detail' 0 %}`.replace('/0', `/${NEW_DIARY_ID}`);
                     
                     alert('이미지가 S3에 저장되었습니다!');
+                    
+                    // 일기 날짜 목록 새로고침
+                    await loadDiaryDates();
                 } else {
                     throw new Error(data.message || 'S3 저장 실패');
                 }
@@ -306,7 +427,7 @@
             }
         });
 
-        // --- 새로운 이벤트 리스너 (Jiyoon의 UI 기능) ---
+        // --- UI 이벤트 리스너 ---
         const sidebar = document.getElementById('sidebar'); 
         const sidebarToggle = document.getElementById('sidebar-toggle');
         
@@ -341,7 +462,7 @@
             });
         });
         
-        // --- '저장' 버튼 클릭 시 일기 쓴 날짜 표시 ---
+        // 폼 제출 시 유효성 검사
         const addForm = document.getElementById('add-form');
         addForm.addEventListener('submit', function(event) {
             const content = document.getElementById('diary-content').value;
@@ -350,13 +471,9 @@
                 alert("일기 내용은 최소 20자 이상 작성해주세요.");
                 return;
             }
-            const dateString = formatDate(selectedDate);
-            if (!diaryDates.includes(dateString)) {
-                diaryDates.push(dateString);
-            }
         });
 
-        // --- 네컷 스타일 버튼 선택 기능 ---
+        // 테마 버튼 선택
         const themeBtns = document.querySelectorAll('.theme-btn');
         const selectedThemeInput = document.getElementById('selected-theme');
         themeBtns.forEach(btn => {
@@ -367,8 +484,9 @@
             });
         });
 
-        // --- 초기 실행 ---
-        updateAllDisplays(selectedDate);
+        // === 초기화 ===
+        loadDiaryDates(); // 일기 날짜 목록 로드
+        dateDisplayText.textContent = formatDate(selectedDate);
         lucide.createIcons();
     });
 </script>
