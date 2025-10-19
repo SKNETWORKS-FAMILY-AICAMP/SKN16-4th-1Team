@@ -1,7 +1,11 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 
 class DiaryModel(models.Model):
+
+    author = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    
     note = models.CharField(max_length=100)
     content = models.TextField()
     posted_date = models.DateTimeField()
@@ -14,9 +18,12 @@ class DiaryModel(models.Model):
         return self.posted_date.strftime('%b %e')
 
     def __str__(self):
-        return self.note
+        return f"{self.note} - {self.author.username if self.author else 'Anonymous'}"
 
     def summary(self):
         if len(self.content) > 100:
             return self.content[:100] + '  ...'
         return self.content[:100]
+
+    class Meta:
+        ordering = ['-posted_date']

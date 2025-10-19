@@ -6,18 +6,18 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import login, logout
 from django.contrib import messages
 
 from .forms import AddForm
 from .models import DiaryModel
 
 
+@login_required
 def entry(request):
     form = AddForm(request.POST or None)
 
     if request.method == 'POST':
-
         if form.is_valid():
             note = request.POST['note']
             content = request.POST['content']
@@ -26,6 +26,7 @@ def entry(request):
             image_url = request.POST.get('image_url', '').strip()
 
             todays_diary = DiaryModel()
+            todays_diary.author = request.user  # ✅ 작성자 추가
             todays_diary.note = note
             todays_diary.posted_date = posted_date
             todays_diary.content = content
@@ -71,8 +72,10 @@ def entry(request):
     )
 
 
+@login_required
 def show(request):
-    diaries = DiaryModel.objects.order_by('posted_date')
+    # ✅ 자신의 일기만 조회
+    diaries = DiaryModel.objects.filter(author=request.user).order_by('posted_date')
     icon = True if len(diaries) == 0 else None
 
     return render(
@@ -88,8 +91,10 @@ def show(request):
     )
 
 
+@login_required
 def detail(request, diary_id):
-    diary = get_object_or_404(DiaryModel, pk=diary_id)
+    # ✅ 자신의 일기만 조회
+    diary = get_object_or_404(DiaryModel, pk=diary_id, author=request.user)
 
     return render(
         request,
@@ -103,8 +108,10 @@ def detail(request, diary_id):
     )
 
 
+@login_required
 def productivity(request):
-    data = DiaryModel.objects.order_by('posted_date')[:10]
+    # ✅ 자신의 일기만 조회
+    data = DiaryModel.objects.filter(author=request.user).order_by('posted_date')[:10]
     icon = True if len(data) == 0 else None
 
     return render(
@@ -119,6 +126,7 @@ def productivity(request):
     )
 
 
+@login_required
 def generate_image(request, diary_id):
     if request.method != 'POST':
         return JsonResponse({'error': 'POST required'}, status=405)
@@ -126,13 +134,17 @@ def generate_image(request, diary_id):
     try:
         from .Image_making.pipeline import generate_and_attach_image_to_diary
 
+        # ✅ 자신의 일기만 처리
+        diary = get_object_or_404(DiaryModel, pk=diary_id, author=request.user)
+        
         generate_and_attach_image_to_diary(diary_id, language='en')
-        diary = get_object_or_404(DiaryModel, pk=diary_id)
+        diary.refresh_from_db()
         return JsonResponse({'status': 'ok', 'temp_image_url': diary.temp_image_url})
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 
+@login_required
 def save_image(request, diary_id):
     if request.method != 'POST':
         return JsonResponse({'error': 'POST required'}, status=405)
@@ -140,6 +152,9 @@ def save_image(request, diary_id):
     try:
         from .Image_making.pipeline import save_temp_image_to_s3
 
+        # ✅ 자신의 일기만 처리
+        diary = get_object_or_404(DiaryModel, pk=diary_id, author=request.user)
+        
         s3_url = save_temp_image_to_s3(diary_id)
 
         if s3_url:
@@ -148,73 +163,6 @@ def save_image(request, diary_id):
             return JsonResponse({'status': 'error', 'message': 'S3 upload failed'}, status=500)
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
-
-
-@require_http_methods(["GET"])
-def get_diary_by_date(request, date_str):
-    try:
-        target_date = datetime.strptime(date_str, '%Y-%m-%d').date()
-        
-        diary = DiaryModel.objects.filter(
-            posted_date__date=target_date
-        ).order_by('-posted_date').first()
-        
-        if diary:
-            print(f"[API] ✅ 일기 발견")
-            print(f"[API] ID: {diary.id}")
-            print(f"[API] 제목: {diary.note}")
-            print(f"[API] S3 이미지 URL: {diary.image_url if diary.image_url else '없음'}")
-            
-            return JsonResponse({
-                'status': 'ok',
-                'data': {
-                    'id': diary.id,
-                    'note': diary.note,
-                    'content': diary.content,
-                    'productivity': diary.productivity,
-                    'image_url': diary.image_url if diary.image_url else None,
-                    'posted_date': diary.posted_date.strftime('%Y-%m-%d %H:%M:%S')
-                }
-            })
-        else:
-            print(f"[API] ⚠️ 해당 날짜에 일기 없음")
-            return JsonResponse({
-                'status': 'empty',
-                'message': '해당 날짜에 작성된 일기가 없습니다.'
-            })
-            
-    except ValueError as e:
-        print(f"[API] ❌ 날짜 형식 오류: {e}")
-        return JsonResponse({
-            'status': 'error',
-            'message': '잘못된 날짜 형식입니다.'
-        }, status=400)
-    except Exception as e:
-        import traceback
-        print("[API] ❌ 예외 발생:")
-        print(traceback.format_exc())
-        return JsonResponse({
-            'status': 'error',
-            'message': str(e)
-        }, status=500)
-
-
-@require_http_methods(["GET"])
-def get_diary_dates(request):
-    try:
-        diary_dates = DiaryModel.objects.values_list('posted_date__date', flat=True).distinct()
-        date_list = [date.strftime('%Y-%m-%d') for date in diary_dates if date]
-        
-        return JsonResponse({
-            'status': 'ok',
-            'dates': date_list
-        })
-        
-    except Exception as e:
-        return JsonResponse({
-            'status': 'error',
-            'message': str(e)
-        }, status=500)
 
 
 def login_view(request):
@@ -250,32 +198,27 @@ def signup(request):
         print(f"[SIGNUP] 닉네임: {nickname}")
         print(f"[SIGNUP] 이메일: {email}")
         
-        # 입력값 검증
         if not email or not password:
             messages.error(request, '이메일과 비밀번호를 입력해주세요.')
             return render(request, 'entry/signup.html')
         
         try:
-            # 이메일 중복 확인
             if User.objects.filter(email=email).exists():
                 messages.error(request, '이미 사용 중인 이메일입니다.')
                 return render(request, 'entry/signup.html')
             
-            # 회원가입 처리
             user = User.objects.create_user(
-                username=email,  # username으로 email 사용
+                username=email,
                 email=email,
                 password=password
             )
             
-            # 닉네임 저장
             if nickname:
                 user.first_name = nickname
                 user.save()
             
             print(f"[SIGNUP] ✅ 회원가입 성공! User ID: {user.id}")
             
-            # ✅ 성공 메시지 + 로그인 페이지로 리다이렉트
             messages.success(request, '회원가입이 완료되었습니다!')
             return redirect('login')
             
@@ -286,14 +229,15 @@ def signup(request):
             messages.error(request, f'회원가입 중 오류가 발생했습니다: {str(e)}')
             return render(request, 'entry/signup.html')
     
-    # GET 요청
     return render(request, 'entry/signup.html')
 
 
+@login_required
 def profile_view(request):
     return render(request, 'entry/profile.html')
 
 
+@login_required
 def settings_view(request):
     return render(request, 'entry/settings.html')
 
@@ -303,13 +247,15 @@ def settings_view(request):
 def diary_dates_api(request):
     """사용자의 모든 일기 작성 날짜를 반환"""
     try:
-        diary_dates = DiaryModel.objects.values_list('posted_date__date', flat=True).distinct()
-        dates = [str(date) for date in diary_dates if date]
+        # ✅ 자신의 일기만 조회
+        diary_dates = DiaryModel.objects.filter(author=request.user).values_list('posted_date__date', flat=True).distinct()
+        date_list = [str(date) for date in diary_dates if date]
         
         return JsonResponse({
             'status': 'ok',
-            'dates': dates
+            'dates': date_list
         })
+        
     except Exception as e:
         return JsonResponse({
             'status': 'error',
@@ -323,13 +269,16 @@ def diary_by_date_api(request, date):
     try:
         target_date = datetime.strptime(date, '%Y-%m-%d').date()
         
+        # ✅ 자신의 일기만 조회
         diary = DiaryModel.objects.filter(
+            author=request.user,
             posted_date__date=target_date
         ).order_by('-posted_date').first()
         
         if diary:
             print(f"[API] ✅ 일기 발견")
             print(f"[API] ID: {diary.id}")
+            print(f"[API] 작성자: {diary.author.username}")
             print(f"[API] 제목: {diary.note}")
             print(f"[API] S3 이미지 URL: {diary.image_url if diary.image_url else '없음'}")
             
