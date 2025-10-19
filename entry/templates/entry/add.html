@@ -1,204 +1,377 @@
 {% extends 'entry/base.html' %}
+
 {% load static %}
+
 {% block content %}
-<div class="container mt-4">
-  <div class="row">
-    <div class="col-md-5 border p-3">
-      <h5>Today's Entry</h5>
-      <form id="add-form" method="post" action="">
-        {% csrf_token %}
-        <div class="form-group mb-3">
-          <label class="form-label">Title</label>
-          <input type="text" name="note" class="form-control" placeholder="Summarise the day" required>
-        </div>
-        <div class="form-group mb-3">
-          <label class="form-label">Content</label>
-          <textarea name="content" rows="10" class="form-control" placeholder="Write your diary entry here" required></textarea>
-        </div>
-        <div class="form-group mb-3">
-          <label class="form-label">Productivity</label>
-          <input type="range" name="productivity" min="0" max="10" value="5" step="1" class="form-control">
-        </div>
-        <button type="submit" class="btn btn-primary w-100">Save & Create Card</button>
-      </form>
-    </div>
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <title>네컷일기 - 메인</title>
+    <style>
+        .main-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; background-color: #f3f4f6; margin: 0; }
+        html.dark .main-body { background-color: #111827; }
+        .sidebar-toggle-button { position: fixed; top: 1rem; right: 1rem; z-index: 50; display: flex; flex-direction: column; justify-content: space-between; width: 2rem; height: 1.5rem; background: transparent; border: none; cursor: pointer; }
+        .sidebar-toggle-button span { display: block; width: 100%; height: 3px; background-color: #1f2937; border-radius: 3px; transition: all 0.3s; }
+        html.dark .sidebar-toggle-button span { background-color: #d1d5db; }
+        .sidebar-toggle-button.open span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+        .sidebar-toggle-button.open span:nth-child(2) { opacity: 0; }
+        .sidebar-toggle-button.open span:nth-child(3) { transform: rotate(-45deg) translate(7px, -7px); }
+        .sidebar { position: fixed; top: 0; right: 0; height: 100%; width: 16rem; background: white; box-shadow: -2px 0 15px rgba(0,0,0,0.1); padding: 1.5rem; display: flex; flex-direction: column; transform: translateX(100%); transition: transform 0.3s ease-in-out; z-index: 40; }
+        html.dark .sidebar { background-color: #1f2937; color: #d1d5db; }
+        .sidebar.open { transform: translateX(0); }
+        .sidebar-profile { display: flex; flex-direction: column; align-items: center; margin-bottom: 1rem; }
+        .profile-image { width: 5rem; height: 5rem; background-color: #e5e7eb; border-radius: 9999px; margin-bottom: 0.5rem; overflow: hidden; }
+        .profile-image img { width: 100%; height: 100%; object-fit: cover; }
+        .profile-name { font-weight: 600; font-size: 1.125rem; }
+        html.dark .profile-name { color: #f9fafb; }
+        .sidebar-nav { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem; width: 100%; }
+        .sidebar-nav a { text-align: left; padding: 0.5rem 1rem; border-radius: 0.5rem; transition: background-color 0.2s; color: #374151; text-decoration: none; }
+        html.dark .sidebar-nav a { color: #d1d5db; }
+        .sidebar-nav a:hover { background-color: #f0f9ff; }
+        html.dark .sidebar-nav a:hover { background-color: #374151; }
+        .sidebar-calendar { flex-grow: 1; overflow-y: auto; margin-top: 1.5rem; border-top: 1px solid #e5e7eb; padding-top: 1.5rem; }
+        html.dark .sidebar-calendar { border-top-color: #374151; }
+        .calendar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
+        .calendar-header h2 { font-size: 1rem; font-weight: 600; }
+        .calendar-header button { background: none; border: none; cursor: pointer; color: #374151; }
+        html.dark .calendar-header button { color: #d1d5db; }
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.25rem; }
+        .calendar-grid div { text-align: center; padding: 0.25rem; border-radius: 9999px; cursor: pointer; transition: background-color 0.2s; }
+        .calendar-grid div:hover { background-color: #f0f9ff; }
+        html.dark .calendar-grid div:hover { background-color: #374151; }
+        .calendar-grid div.selected { background-color: #7dd3fc; color: white; font-weight: bold; }
+        .calendar-grid div.has-diary { background-color: #fecaca; border-radius: 0.25rem; }
+        html.dark .calendar-grid div.has-diary { background-color: #991b1b; }
+        .logout-button { margin-top: auto; width: 100%; padding: 0.5rem 1rem; border-radius: 0.5rem; background: #fee2e2; border: none; color: #ef4444; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem; transition: background-color 0.2s; }
+        .logout-button:hover { background-color: #fecaca; }
+        .main-content { padding: 2.5rem 1.5rem; } 
+        .date-display { display: flex; align-items: center; gap: 0.5rem; font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem; color: #1f2937; }
+        html.dark .date-display { color: #f9fafb; }
+        .calendar-toggle-btn { background: none; border: none; cursor: pointer; color: #6b7280; }
+        .calendar-modal { display: none; position: absolute; background: white; border-radius: 0.5rem; box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1); padding: 1rem; z-index: 10; margin-top: 0.5rem; }
+        html.dark .calendar-modal { background-color: #374151; }
+        .calendar-modal.open { display: block; }
+        .calendar-modal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.25rem; }
+        .calendar-modal-grid div { text-align: center; padding: 0.5rem; border-radius: 9999px; cursor: pointer; }
+        .theme-btn-group { display: flex; gap: 0.6rem; margin-bottom:1rem;}
+        .theme-btn { flex:1; padding: 0.5rem 0; border-radius:0.5rem; border:1px solid #007bff; color:#007bff; background:#fff; cursor:pointer; font-weight:500; transition:background 0.2s;}
+        .theme-btn.active, .theme-btn:focus { background:#007bff; color:#fff; border:1px solid #007bff;}
+        html.dark .theme-btn { background:#1f2937; color:#93c5fd; border-color:#93c5fd;}
+        html.dark .theme-btn.active, html.dark .theme-btn:focus { background:#2563eb; color:#fff; }
+    </style>
 
-    <div class="col-md-2 d-flex align-items-center justify-content-center">
-      <div id="progress-wrapper" class="w-100" style="display: none;">
-        <div class="text-center mb-2">Generating image...</div>
-        <div class="progress" style="height: 10px;">
-          <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
-        </div>
-      </div>
-    </div>
+    <script>
+        (function() {
+            const theme = localStorage.getItem('theme');
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+</head>
 
-    <div class="col-md-5 border p-3">
-      <h5>Four-cut Preview</h5>
-      <div class="border mb-3 d-flex justify-content-center align-items-center" style="height: 400px;">
-        <img id="preview-image" src="" alt="Preview" style="max-width: 100%; max-height: 100%; display: none;" />
-        <span id="preview-placeholder" class="text-muted">Preview</span>
-      </div>
-      <div class="d-flex justify-content-center flex-wrap gap-2">
-        <button type="button" class="btn btn-outline-secondary" id="regenerate-btn" disabled>Regenerate</button>
-        <button type="button" class="btn btn-primary" id="save-image-btn" disabled>Save</button>
-        <a id="detail-link" class="btn btn-outline-secondary disabled" href="#" tabindex="-1" aria-disabled="true">View Details</a>
-      </div>
-    </div>
-  </div>
+<body class="main-body">
+    <button id="sidebar-toggle" class="sidebar-toggle-button"><span></span><span></span><span></span></button>
+
+    <aside id="sidebar" class="sidebar">
+        <div class="sidebar-profile">
+            <div class="profile-image"><img src="https://via.placeholder.com/80" alt="프로필"></div>
+            <span class="profile-name">{{ user.username }}님</span>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="{% url 'profile' %}">내 정보</a>
+            <a href="{% url 'settings' %}">환경설정</a>
+        </nav>
+        <div class="sidebar-calendar">
+            <div class="calendar-header">
+                <button id="prev-month-sidebar">&lt;</button>
+                <h2 id="calendar-title-sidebar"></h2>
+                <button id="next-month-sidebar">&gt;</button>
+            </div>
+            <div class="calendar-grid" style="font-size: 0.8rem; color: #6b7280;">
+                <div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div>
+            </div>
+            <div id="calendar-grid-sidebar" class="calendar-grid" style="font-size: 0.8rem;"></div>
+        </div>
+        <form action="{% url 'logout' %}" method="post">
+            {% csrf_token %}
+            <button type="submit" class="logout-button"><i data-lucide="log-out"></i><span>로그아웃</span></button>
+        </form>
+    </aside>
+
+    <main id="main-content" class="container mt-4 main-content">
+        <div class="row">
+            <div class="col-md-5 border p-3 bg-white rounded shadow-sm">
+                <div class="date-display">
+                    <span id="date-display-text"></span>
+                    <button id="calendar-toggle-main" class="calendar-toggle-btn"><i data-lucide="calendar"></i></button>
+                    <div id="calendar-modal-main" class="calendar-modal">
+                        <div class="calendar-header">
+                            <button id="prev-month-main">&lt;</button>
+                            <h2 id="calendar-title-main"></h2>
+                            <button id="next-month-main">&gt;</button>
+                        </div>
+                        <div class="calendar-modal-grid" style="font-size: 0.9rem; color: #6b7280;">
+                           <div>일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div>토</div>
+                        </div>
+                        <div id="calendar-grid-main" class="calendar-modal-grid"></div>
+                    </div>
+                </div>
+                <h5 class="font-weight-bold">오늘의 일기</h5>
+                <form id="add-form" method="post" action="">
+                    {% csrf_token %}
+                    <div class="form-group mb-3"><label class="form-label">제목</label><input type="text" name="note" class="form-control" placeholder="이 날을 한 줄로" required></div>
+                    <div class="form-group mb-3"><label class="form-label">내용</label><textarea name="content" id="diary-content" rows="10" class="form-control" placeholder="일기를 입력하세요" required></textarea></div>
+                    <div class="form-group mb-3"><label class="form-label">오늘의 생산성</label><input type="range" name="productivity" min="0" max="10" value="5" step="1" class="form-control"></div>
+                    <!-- 네컷 스타일 선택 버튼 -->
+                    <div class="theme-btn-group mb-3" id="theme-selector">
+                     <button type="button" class="theme-btn active" data-theme="Theme1">Theme1</button>
+                     <button type="button" class="theme-btn" data-theme="Theme2">Theme2</button>
+                     <button type="button" class="theme-btn" data-theme="Theme3">Theme3</button>
+                     <input type="hidden" name="theme" id="selected-theme" value="Theme1">
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">저장 & 카드 제작</button>
+                </form>
+            </div>
+            <div class="col-md-2 d-flex align-items-center justify-content-center">
+                <div id="progress-wrapper" class="w-100" style="display: none;"><div class="text-center mb-2">이미지 생성 중...</div><div class="progress" style="height: 10px;"><div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div></div></div>
+            </div>
+            <div class="col-md-5 border p-3 bg-white rounded shadow-sm">
+                <h5 class="font-weight-bold">오늘의 네컷 미리보기</h5>
+                <div class="border mb-3 d-flex justify-content-center align-items-center" style="height: 400px; background-color: #f8f9fa;">
+                    <img id="preview-image" src="" alt="미리보기" style="max-width: 100%; max-height: 100%; display: none;" />
+                    <span id="preview-placeholder" class="text-muted">네컷</span>
+                </div>
+                <div class="d-flex justify-content-center">
+                    <button type="button" class="btn btn-outline-secondary me-2" id="regenerate-btn" disabled>재생성</button>
+                    <button type="button" class="btn btn-success me-2" id="save-btn" disabled>일기 저장</button>
+                    <a id="detail-link" class="btn btn-outline-secondary disabled" href="#" tabindex="-1" aria-disabled="true">저장 확인</a>
+                </div>
+            </div>
+        </div>
+    </main>
 </div>
 
 <script>
-  function getCookie(name) {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop().split(';').shift();
-  }
+    document.addEventListener('DOMContentLoaded', function() {
+        // --- 상태 관리 ---
+        let currentDate = new Date();
+        let selectedDate = new Date();
+        const diaryDates = ['2025-10-05', '2025-10-12']; // 임시 일기 작성일
 
-  const progressWrapper = document.getElementById('progress-wrapper');
-  const progressBar = document.getElementById('progress-bar');
-  const previewImage = document.getElementById('preview-image');
-  const previewPlaceholder = document.getElementById('preview-placeholder');
-  const regenerateBtn = document.getElementById('regenerate-btn');
-  const detailLink = document.getElementById('detail-link');
-  const saveImageBtn = document.getElementById('save-image-btn');
+        // --- 요소 찾기 ---
+        const dateDisplayText = document.getElementById('date-display-text');
+        const calendarToggleMain = document.getElementById('calendar-toggle-main');
+        const calendarModalMain = document.getElementById('calendar-modal-main');
 
-  const NEW_DIARY_ID = {{ new_diary_id|default:'null' }};
-  const generateUrlTemplate = `{% url 'generate_image' 0 %}`;
-  const finalizeUrlTemplate = `{% url 'finalize_image' 0 %}`;
-  let currentTempImageUrl = null;
-
-  function disableDetailLink() {
-    detailLink.classList.add('disabled');
-    detailLink.href = '#';
-    detailLink.setAttribute('tabindex', '-1');
-    detailLink.setAttribute('aria-disabled', 'true');
-  }
-
-  function enableDetailLink(url) {
-    detailLink.classList.remove('disabled');
-    detailLink.href = url;
-    detailLink.removeAttribute('tabindex');
-    detailLink.removeAttribute('aria-disabled');
-  }
-
-  function animateProgressTo(target) {
-    const current = parseInt(progressBar.style.width || '0', 10);
-    const step = (target - current) / 30;
-    let i = 0;
-    const timer = setInterval(() => {
-      i += 1;
-      const next = Math.min(target, Math.round(current + step * i));
-      progressBar.style.width = `${next}%`;
-      if (next >= target || i >= 30) clearInterval(timer);
-    }, 50);
-  }
-
-  async function startGeneration(id) {
-    progressWrapper.style.display = 'block';
-    progressBar.style.width = '0%';
-    progressBar.classList.add('progress-bar-animated');
-    regenerateBtn.disabled = true;
-    saveImageBtn.disabled = true;
-    disableDetailLink();
-    previewImage.style.display = 'none';
-    previewPlaceholder.style.display = 'block';
-    currentTempImageUrl = null;
-    animateProgressTo(90);
-
-    try {
-      const resp = await fetch(generateUrlTemplate.replace('/0/', `/${id}/`), {
-        method: 'POST',
-        headers: { 'X-CSRFToken': getCookie('csrftoken') || '' }
-      });
-      const data = await resp.json();
-      if (data.status === 'ok' && data.temp_image_url) {
-        progressBar.classList.remove('progress-bar-animated');
-        animateProgressTo(100);
-        previewPlaceholder.style.display = 'none';
-        previewImage.src = data.temp_image_url;
-        previewImage.style.display = 'block';
-        currentTempImageUrl = data.temp_image_url;
-        regenerateBtn.disabled = false;
-        saveImageBtn.disabled = false;
-      } else {
-        throw new Error(data.message || 'Failed to generate the image');
-      }
-    } catch (error) {
-      console.error(error);
-      progressWrapper.style.display = 'none';
-      alert('An error occurred while generating the image. Please try again later.');
-      regenerateBtn.disabled = false;
-    }
-  }
-
-  async function finalizeImage(id) {
-    if (!currentTempImageUrl) return;
-    saveImageBtn.disabled = true;
-    try {
-      const resp = await fetch(finalizeUrlTemplate.replace('/0/', `/${id}/`), {
-        method: 'POST',
-        headers: { 'X-CSRFToken': getCookie('csrftoken') || '' }
-      });
-      const data = await resp.json();
-      if (data.status === 'ok') {
-        currentTempImageUrl = null;
-        if (data.image_url) {
-          previewImage.src = data.image_url;
+        // --- 함수 정의 ---
+        function formatDate(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
         }
-        if (data.detail_url) {
-          enableDetailLink(data.detail_url);
+        function updateAllDisplays(newDate) {
+            selectedDate = newDate;
+            dateDisplayText.textContent = formatDate(selectedDate);
+            renderCalendar('sidebar', currentDate.getFullYear(), currentDate.getMonth());
+            renderCalendar('main', currentDate.getFullYear(), currentDate.getMonth());
         }
-      } else {
-        throw new Error(data.message || 'Failed to save the image');
-      }
-    } catch (error) {
-      console.error(error);
-      alert('An error occurred while saving the image. Please try again.');
-      saveImageBtn.disabled = false;
-      return;
-    }
-  }
-
-  disableDetailLink();
-
-  if (NEW_DIARY_ID) {
-    startGeneration(NEW_DIARY_ID);
-  }
-
-  if (regenerateBtn) {
-    regenerateBtn.addEventListener('click', () => {
-      if (!NEW_DIARY_ID) return;
-      startGeneration(NEW_DIARY_ID);
-    });
-  }
-
-  if (saveImageBtn) {
-    saveImageBtn.addEventListener('click', async () => {
-      if (!NEW_DIARY_ID) return;
-      
-      saveImageBtn.disabled = true;
-      saveImageBtn.textContent = '저장 중...';
-      
-      try {
-        const resp = await fetch(`{% url 'save_image' 0 %}`.replace('/0/', `/${NEW_DIARY_ID}/`), {
-          method: 'POST',
-          headers: { 'X-CSRFToken': getCookie('csrftoken') || '' }
-        });
-        const data = await resp.json();
+        function renderCalendar(type, year, month) {
+            const titleEl = document.getElementById(`calendar-title-${type}`);
+            const gridEl = document.getElementById(`calendar-grid-${type}`);
+            titleEl.textContent = `${year}년 ${month + 1}월`;
+            gridEl.innerHTML = '';
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            for (let i = 0; i < firstDay; i++) { gridEl.appendChild(document.createElement('div')); }
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayEl = document.createElement('div');
+                dayEl.textContent = day;
+                const thisDate = new Date(year, month, day);
+                const thisDateString = formatDate(thisDate);
+                if (diaryDates.includes(thisDateString)) { dayEl.classList.add('has-diary'); }
+                if (formatDate(selectedDate) === thisDateString) { dayEl.classList.add('selected'); }
+                dayEl.addEventListener('click', () => {
+                    updateAllDisplays(thisDate);
+                    if (type === 'main') calendarModalMain.classList.remove('open');
+                });
+                gridEl.appendChild(dayEl);
+            }
+        }
         
-        if (data.status === 'ok') {
-          saveImageBtn.textContent = '저장 완료!';
-          // 성공 처리
-        } else {
-          throw new Error('S3 저장 실패');
+        // --- Main 기능: 이미지 생성 및 S3 저장 JavaScript ---
+        function getCookie(name) { 
+            const value = `; ${document.cookie}`; 
+            const parts = value.split(`; ${name}=`); 
+            if (parts.length === 2) return parts.pop().split(';').shift(); 
         }
-      } catch (e) {
-        console.error(e);
-        saveImageBtn.disabled = false;
-        saveImageBtn.textContent = 'Save';
-        alert('S3 저장 중 오류가 발생했습니다. 다시 시도해주세요.');
-      }
+        
+        const progressWrapper = document.getElementById('progress-wrapper'); 
+        const progressBar = document.getElementById('progress-bar'); 
+        const previewImage = document.getElementById('preview-image'); 
+        const previewPlaceholder = document.getElementById('preview-placeholder'); 
+        const regenerateBtn = document.getElementById('regenerate-btn'); 
+        const saveBtn = document.getElementById('save-btn');
+        const detailLink = document.getElementById('detail-link'); 
+        const NEW_DIARY_ID = {{ new_diary_id|default:'null' }};
+        
+        function animateProgressTo(target) { 
+            const current = parseInt(progressBar.style.width || '0');
+            const step = (target - current) / 30;
+            let i = 0;
+            const timer = setInterval(() => {
+                i += 1;
+                const next = Math.min(target, Math.round(current + step * i));
+                progressBar.style.width = next + '%';
+                if (next >= target || i >= 30) clearInterval(timer);
+            }, 50);
+        }
+        
+        async function startGeneration(id) { 
+            progressWrapper.style.display = 'block';
+            progressBar.style.width = '0%';
+            progressBar.classList.add('progress-bar-animated');
+            animateProgressTo(90);
+            
+            try {
+                const resp = await fetch(`{% url 'generate_image' 0 %}`.replace('/0/', `/${id}/`), {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': getCookie('csrftoken') || '' }
+                });
+                const data = await resp.json();
+                if (data.status === 'ok' && data.temp_image_url) {
+                    progressBar.classList.remove('progress-bar-animated');
+                    animateProgressTo(100);
+                    previewPlaceholder.style.display = 'none';
+                    previewImage.src = data.temp_image_url;
+                    previewImage.style.display = 'block';
+                    regenerateBtn.disabled = false;
+                    saveBtn.disabled = false;
+                } else {
+                    throw new Error(data.message || '이미지 생성 실패');
+                }
+            } catch (e) {
+                console.error(e);
+                progressWrapper.style.display = 'none';
+                alert('이미지 생성 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+            }
+        }
+        
+        if (NEW_DIARY_ID) {
+            startGeneration(NEW_DIARY_ID);
+        }
+        
+        regenerateBtn && regenerateBtn.addEventListener('click', () => {
+            if (NEW_DIARY_ID) startGeneration(NEW_DIARY_ID);
+        });
+        
+        // S3 저장 버튼: temp_image_url을 S3에 업로드
+        saveBtn && saveBtn.addEventListener('click', async () => {
+            if (!NEW_DIARY_ID) return;
+            
+            saveBtn.disabled = true;
+            saveBtn.textContent = '저장 중...';
+        
+            try {
+                const resp = await fetch(`{% url 'save_image' 0 %}`.replace('/0/', `/${NEW_DIARY_ID}/`), {
+                    method: 'POST',
+                    headers: { 'X-CSRFToken': getCookie('csrftoken') || '' }
+                });
+                const data = await resp.json();
+                
+                if (data.status === 'ok' && data.image_url) {
+                    saveBtn.textContent = '저장 완료!';
+                    saveBtn.classList.remove('btn-success');
+                    saveBtn.classList.add('btn-secondary');
+                    
+                    // 상세보기 링크 활성화
+                    detailLink.classList.remove('disabled');
+                    detailLink.removeAttribute('tabindex');
+                    detailLink.removeAttribute('aria-disabled');
+                    detailLink.href = `{% url 'detail' 0 %}`.replace('/0', `/${NEW_DIARY_ID}`);
+                    
+                    alert('이미지가 S3에 저장되었습니다!');
+                } else {
+                    throw new Error(data.message || 'S3 저장 실패');
+                }
+            } catch (e) {
+                console.error(e);
+                saveBtn.disabled = false;
+                saveBtn.textContent = '일기 저장';
+                alert('S3 저장 중 오류가 발생했습니다. 다시 시도해주세요.');
+            }
+        });
+
+        // --- 새로운 이벤트 리스너 (Jiyoon의 UI 기능) ---
+        const sidebar = document.getElementById('sidebar'); 
+        const sidebarToggle = document.getElementById('sidebar-toggle');
+        
+        sidebarToggle.addEventListener('click', () => { 
+            sidebar.classList.toggle('open'); 
+            sidebarToggle.classList.toggle('open'); 
+        });
+        
+        calendarToggleMain.addEventListener('click', (e) => { 
+            e.stopPropagation(); 
+            calendarModalMain.classList.toggle('open'); 
+        });
+        
+        document.body.addEventListener('click', () => { 
+            calendarModalMain.classList.remove('open'); 
+        });
+        
+        calendarModalMain.addEventListener('click', (e) => { 
+            e.stopPropagation(); 
+        });
+        
+        ['sidebar', 'main'].forEach(type => {
+            document.getElementById(`prev-month-${type}`).addEventListener('click', () => { 
+                currentDate.setMonth(currentDate.getMonth() - 1); 
+                renderCalendar('sidebar', currentDate.getFullYear(), currentDate.getMonth()); 
+                renderCalendar('main', currentDate.getFullYear(), currentDate.getMonth()); 
+            });
+            document.getElementById(`next-month-${type}`).addEventListener('click', () => { 
+                currentDate.setMonth(currentDate.getMonth() + 1); 
+                renderCalendar('sidebar', currentDate.getFullYear(), currentDate.getMonth()); 
+                renderCalendar('main', currentDate.getFullYear(), currentDate.getMonth()); 
+            });
+        });
+        
+        // --- '저장' 버튼 클릭 시 일기 쓴 날짜 표시 ---
+        const addForm = document.getElementById('add-form');
+        addForm.addEventListener('submit', function(event) {
+            const content = document.getElementById('diary-content').value;
+            if (content.trim().length < 20) {
+                event.preventDefault();
+                alert("일기 내용은 최소 20자 이상 작성해주세요.");
+                return;
+            }
+            const dateString = formatDate(selectedDate);
+            if (!diaryDates.includes(dateString)) {
+                diaryDates.push(dateString);
+            }
+        });
+
+        // --- 네컷 스타일 버튼 선택 기능 ---
+        const themeBtns = document.querySelectorAll('.theme-btn');
+        const selectedThemeInput = document.getElementById('selected-theme');
+        themeBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                themeBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                selectedThemeInput.value = btn.dataset.theme;
+            });
+        });
+
+        // --- 초기 실행 ---
+        updateAllDisplays(selectedDate);
+        lucide.createIcons();
     });
-  }
 </script>
+</body>
+</html>
 {% endblock %}

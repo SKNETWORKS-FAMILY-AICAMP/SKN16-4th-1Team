@@ -2,9 +2,10 @@ python -m venv .venv
 
 .venv/Scripts/activate
 
-pip install --upgrade pip
+.venv\Scripts\activate
 
-pip install -r requiremnets.txt
+pip install --upgrade pip
+pip install -r requirements.txt
 
 python manage.py makemigrations
 
