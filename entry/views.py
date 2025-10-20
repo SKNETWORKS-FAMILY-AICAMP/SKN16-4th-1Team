@@ -106,6 +106,62 @@ def show(request):
 
 
 @login_required
+
+# views.py
+
+@login_required
+def detail_view(request, date):
+    """해당 날짜의 모든 일기 조회"""
+    try:
+        # 날짜 형식으로 파싱
+        target_date = datetime.strptime(date, '%Y-%m-%d').date()
+        
+        # 해당 날짜의 모든 일기 가져오기
+        diaries = DiaryModel.objects.filter(
+            author=request.user,
+            posted_date__date=target_date
+        ).order_by('posted_date')  # 작성 순서대로
+        
+        if not diaries.exists():
+            messages.warning(request, '해당 날짜에 작성된 일기가 없습니다.')
+            return redirect('entry')  # ✅ 수정!
+        
+        # 첫 번째 일기를 기본 선택
+        selected_diary = diaries.first()
+        
+        return render(request, 'entry/detail.html', {
+            'date': date,
+            'diaries': diaries,
+            'selected_diary': selected_diary
+        })
+        
+    except Exception as e:
+        messages.error(request, f'오류: {str(e)}')
+        return redirect('entry')  # ✅ 수정!
+
+
+@login_required
+def get_diary_detail(request, diary_id):
+    """AJAX로 특정 일기 상세 정보 가져오기"""
+    try:
+        diary = DiaryModel.objects.get(id=diary_id, author=request.user)  # ✅ 수정!
+        return JsonResponse({
+            'status': 'ok',
+            'data': {
+                'id': diary.id,
+                'note': diary.note,
+                'content': diary.content,
+                'image_url': diary.image_url,
+                'posted_date': diary.posted_date.strftime('%Y-%m-%d'),
+                'date_created': diary.posted_date.strftime('%Y-%m-%d %H:%M:%S')
+            }
+        })
+    except DiaryModel.DoesNotExist:  # ✅ 수정!
+        return JsonResponse({
+            'status': 'error',
+            'message': '일기를 찾을 수 없습니다.'
+        }, status=404)
+
 def detail(request, diary_id):
     # ✅ 자신의 일기만 조회
     diary = get_object_or_404(DiaryModel, pk=diary_id, author=request.user)
