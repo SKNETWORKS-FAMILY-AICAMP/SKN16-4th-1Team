@@ -21,20 +21,45 @@ def entry(request):
         if form.is_valid():
             note = request.POST['note']
             content = request.POST['content']
-            posted_date = datetime.now()
+            selected_date = request.POST.get('selected_date', None)
+            if selected_date:
+                # 날짜 문자열을 datetime으로 변환
+                posted_date = datetime.strptime(selected_date, '%Y-%m-%d')
+            else:
+                # 날짜 선택 안 했으면 오늘
+                posted_date = datetime.now()
+                
             productivity = request.POST['productivity']
+
             image_url = request.POST.get('image_url', '').strip()
 
-            todays_diary = DiaryModel()
-            todays_diary.author = request.user  # ✅ 작성자 추가
-            todays_diary.note = note
-            todays_diary.posted_date = posted_date
-            todays_diary.content = content
-            todays_diary.productivity = productivity
-            if image_url:
-                todays_diary.image_url = image_url
+            # ✅ 같은 날짜의 일기가 있는지 확인
+            today_date = posted_date.date()
+            existing_diary = DiaryModel.objects.filter(
+                author=request.user,
+                posted_date__date=today_date
+            ).first()
 
-            todays_diary.save()
+            if existing_diary:
+                # 기존 일기 수정
+                existing_diary.note = note
+                existing_diary.content = content
+                existing_diary.productivity = productivity
+                if image_url:
+                    existing_diary.image_url = image_url
+                existing_diary.save()
+                todays_diary = existing_diary
+            else:
+                # 새 일기 생성
+                todays_diary = DiaryModel()
+                todays_diary.author = request.user
+                todays_diary.note = note
+                todays_diary.posted_date = posted_date
+                todays_diary.content = content
+                todays_diary.productivity = productivity
+                if image_url:
+                    todays_diary.image_url = image_url
+                todays_diary.save()
 
             form = AddForm()
             return render(
@@ -48,17 +73,6 @@ def entry(request):
                     'new_diary_id': todays_diary.id,
                 }
             )
-
-        return render(
-            request,
-            'entry/add.html',
-            {
-                'title': 'Add Entry',
-                'subtitle': "Add what you feel and we'll store it for you.",
-                'add_highlight': True,
-                'addform': form,
-            }
-        )
 
     return render(
         request,
@@ -106,7 +120,30 @@ def detail(request, diary_id):
             'diary': diary
         }
     )
-
+    
+def download_image(request, diary_id):
+    """이미지를 로컬 PC에 PNG로 다운로드"""
+    try:
+        # ✅ 자신의 일기만 조회
+        diary = get_object_or_404(DiaryModel, pk=diary_id, author=request.user)
+        
+        if not diary.image_url:
+            return HttpResponse('이미지가 없습니다.', status=404)
+        
+        # S3에서 이미지 가져오기
+        response = requests.get(diary.image_url)
+        
+        if response.status_code == 200:
+            # PNG 파일로 다운로드
+            http_response = HttpResponse(response.content, content_type='image/png')
+            http_response['Content-Disposition'] = f'attachment; filename="네컷일기_{diary.posted_date.strftime("%Y%m%d")}.png"'
+            return http_response
+        else:
+            return HttpResponse('이미지를 가져올 수 없습니다.', status=500)
+            
+    except Exception as e:
+        print(f"[DOWNLOAD] ❌ 에러: {str(e)}")
+        return HttpResponse(f'다운로드 실패: {str(e)}', status=500)
 
 @login_required
 def productivity(request):
