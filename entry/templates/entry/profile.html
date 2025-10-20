@@ -6,15 +6,6 @@
 <section class="profile-section">
     <h1 class="section-title">내 정보</h1>
 
-    <div class="profile-image-area">
-        <div class="profile-image-wrapper">
-            <img id="profile-preview" src="" alt="미리보기" style="display: none;">
-            <i data-lucide="user-circle"></i>
-        </div>
-        <div id="profile-buttons" class="profile-buttons"></div>
-        <input type="file" id="image-upload" style="display: none;" accept="image/*">
-    </div>
-
     <div class="info-group">
         <div id="info-header" class="info-header"></div>
         <div id="info-display-area" class="info-content"></div>
@@ -51,10 +42,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // --- 필요한 HTML 요소들 ---
     const infoHeader = document.getElementById('info-header');
     const infoDisplayArea = document.getElementById('info-display-area');
-    const imageUpload = document.getElementById('image-upload');
-    const profilePreview = document.getElementById('profile-preview');
-    const defaultProfileIcon = document.querySelector('.profile-image-wrapper i');
-    const profileButtons = document.getElementById('profile-buttons');
     const progressFill = document.getElementById('progress-fill');
     const progressPercent = document.getElementById('progress-percent');
     const progressDetail = document.getElementById('progress-detail');
@@ -71,12 +58,12 @@ document.addEventListener('DOMContentLoaded', function() {
             infoDisplayArea.innerHTML = `
                 <div class="verification-box">
                     <p>본인 확인을 위해 비밀번호를 입력해주세요.</p>
-                    <div class="input-group">
-                        <i data-lucide="mail"></i>
+                    <div class="info-row">
+                        <span class="info-label">이메일</span>
                         <input type="email" id="verify-email" placeholder="아이디(이메일)" value="${userInfo.email}">
                     </div>
-                    <div class="input-group">
-                        <i data-lucide="lock"></i>
+                    <div class="info-row">
+                        <span class="info-label">비밀번호</span>
                         <input type="password" id="verify-password" placeholder="비밀번호">
                     </div>
                     <p class="error-message" id="verify-error"></p>
@@ -93,8 +80,8 @@ document.addEventListener('DOMContentLoaded', function() {
             infoHeader.innerHTML = `
                 <h2>로그인 정보</h2>
                 <div style="display:flex; gap: 1rem;">
-                    <button id="save-btn" class="btn-text" style="color:#3b82f6">저장</button>
-                    <button id="cancel-btn" class="btn-text" style="color: #6b7280;">취소</button>
+                    <button id="save-btn" class="btn-text">저장</button>
+                    <button id="cancel-btn" class="btn-text">취소</button>
                 </div>`;
             infoDisplayArea.innerHTML = `
                 <div class="info-row"><span class="info-label">이름</span><input type="text" id="edit-name" value="${userInfo.name}"></div>
@@ -116,20 +103,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // --- 프로필 버튼을 다시 그리는 함수 ---
-    function renderProfileButtons() {
-        if (profilePreview.style.display !== 'none') {
-            profileButtons.innerHTML = `
-                <button id="save-image-btn" class="btn-secondary"><i data-lucide="save"></i> 저장하기</button>
-                <button id="cancel-image-btn" class="btn-secondary"><i data-lucide="x"></i> 취소</button>`;
-            document.getElementById('save-image-btn').addEventListener('click', handleSaveImage);
-            document.getElementById('cancel-image-btn').addEventListener('click', handleCancelImage);
-        } else {
-            profileButtons.innerHTML = `<button id="change-image-btn" class="btn-secondary">프로필 사진 변경</button>`;
-            document.getElementById('change-image-btn').addEventListener('click', () => imageUpload.click());
-        }
-        lucide.createIcons();
-    }
     
     // --- 이벤트 핸들러 함수들 ---
     function handleVerification() {
@@ -162,43 +135,13 @@ document.addEventListener('DOMContentLoaded', function() {
             if (userId && newPassword.includes(userId)) { errorEl.textContent = "아이디(이메일)가 포함된 비밀번호는 사용할 수 없습니다."; return; }
             if (newPassword !== confirmPassword) { errorEl.textContent = '새 비밀번호가 일치하지 않습니다.'; return; }
         }
-        alert('정보가 저장되었습니다. (프론트엔드 임시)');
+        alert('정보가 저장되었습니다.');
         isEditing = false; renderInfoArea();
     }
 
-    function handleSaveImage() {
-        alert('프로필 사진이 저장되었습니다. (프론트엔드 임시)');
-        profilePreview.style.display = 'none';
-        defaultProfileIcon.style.display = 'block';
-        renderProfileButtons();
-    }
-    
-    function handleCancelImage() {
-        profilePreview.src = '';
-        profilePreview.style.display = 'none';
-        defaultProfileIcon.style.display = 'block';
-        imageUpload.value = '';
-        renderProfileButtons();
-    }
-
-    // --- 이벤트 리스너 연결 ---
-    imageUpload.addEventListener('change', function(event) {
-        const file = event.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                profilePreview.src = e.target.result;
-                profilePreview.style.display = 'block';
-                defaultProfileIcon.style.display = 'none';
-                renderProfileButtons();
-            };
-            reader.readAsDataURL(file);
-        }
-    });
-
     document.getElementById('withdraw-btn').addEventListener('click', () => {
         if (window.confirm("정말로 탈퇴하시겠습니까? 모든 데이터가 삭제되며 복구할 수 없습니다.")) {
-            alert("탈퇴 처리되었습니다. (실제 기능은 백엔드 연동 필요)");
+            alert("탈퇴 처리되었습니다.");
         }
     });
     

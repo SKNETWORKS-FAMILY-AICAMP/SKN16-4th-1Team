@@ -5,7 +5,7 @@
 {% block content %}
 <div class="card auth-card">
     <div class="card-header bg-white text-center border-0 pt-4">
-        <h1 class="h3 font-weight-bold">네컷일기</h1>
+        <h1 class="h3 font-weight-bold">일기툰</h1>
     </div>
     <div class="card-body px-4 pt-0">
         <ul class="nav nav-tabs nav-fill mb-4">
@@ -19,11 +19,6 @@
 
         <form id="signup-form" method="post">
             {% csrf_token %}
-            
-            <div class="form-group mb-3">
-                <label for="signup-nickname" class="font-weight-bold">이름(닉네임)</label>
-                <input type="text" class="form-control" id="signup-nickname" name="nickname" required>
-            </div>
 
             <div class="form-group mb-3">
                 <label for="signup-email" class="font-weight-bold">아이디 (이메일)</label>
@@ -52,6 +47,11 @@
                 <label for="signup-password-confirm" class="font-weight-bold">비밀번호 확인</label>
                 <input type="password" class="form-control" id="signup-password-confirm" name="password_confirm" required>
                 <p class="error-message" id="signup-password-confirm-error"></p>
+            </div>
+
+            <div class="form-group mb-3">
+                <label for="signup-nickname" class="font-weight-bold">이름(닉네임)</label>
+                <input type="text" class="form-control" id="signup-nickname" name="nickname" required>
             </div>
 
             <button type="submit" class="btn btn-primary btn-block py-2 font-weight-bold">회원가입</button>

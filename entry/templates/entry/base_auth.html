@@ -9,62 +9,167 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
     <script src="https://unpkg.com/lucide@latest"></script> <title>{% block title %}일기툰{% endblock %}</title>
     <style>
-        /* Bootstrap을 기반으로 한 최소한의 추가 스타일 */
-        body { 
-            font-family: 'Vollkorn', serif; 
-            background-color: #f8f9fa;
-            display: flex;
-            align-items: center;
-            min-height: 100vh;
-        }
-        .auth-card {
-            max-width: 450px;
-            margin: 2rem auto;
-            border: none;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        }
-        .nav-tabs .nav-link {
-            font-weight: bold;
-            color: #6c757d;
-        }
-        .nav-tabs .nav-link.active {
-            color: #007bff;
-            border-color: #dee2e6 #dee2e6 #fff;
-        }
-        .error-message {
-            color: #dc3545; /* Bootstrap danger color */
-            font-size: 0.8rem;
-            height: 1rem;
-            margin-top: 0.25rem;
-        }
-        .conditions-box {
-            font-size: 0.8rem;
-            color: #6c757d;
-            margin-top: 0.5rem;
-            padding-left: 0.25rem;
-            display: none; /* JS로 제어 */
-        }
-        .conditions-box p {
-            margin: 0.1rem 0;
-        }
-        .conditions-box p.valid {
-            color: #28a745; /* Bootstrap success color */
-        }
-        /* 로그인 페이지 아이콘 버튼 스타일 */
-        .position-relative { position: relative; }
-        .btn-clear-input, .btn-toggle-password {
-            position: absolute;
-            top: 50%;
-            right: 10px;
-            transform: translateY(-50%);
-            background: none;
-            border: none;
-            cursor: pointer;
-            color: #adb5bd;
-            padding: 0.25rem;
-            line-height: 1;
-        }
-    </style>
+    /* === 폰트: add.html (sans-serif) / 테마: 클래식 (주황/노랑) === */
+    body { 
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Noto Sans KR', sans-serif;
+        background-color: #fef3c7; /* 클래식 테마 body 배경 */
+        color: #374151;
+        display: flex;
+        align-items: center;
+        min-height: 100vh;
+    }
+
+    /* 
+      카드 본체(.card-body)가 흰색이므로, 
+      .auth-card의 기본 배경도 흰색으로 맞춥니다.
+    */
+    .auth-card {
+        max-width: 450px;
+        margin: 2rem auto;
+        background-color: #ffffff; /* 카드 본체 배경 (흰색) */
+        border: 1px solid #facc15;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        color: #374151;
+        padding: 0; /* 카드 자체의 내부 여백 제거 */
+    }
+
+    /* [수정] 
+      탭 헤더의 배경을 연한 주황색(#fff8db)으로 변경합니다.
+      (비활성 탭과 동일한 색상)
+    */
+    .auth-card .card-header {
+        background-color: #fff8db; /* 탭 영역 배경 (연한 주황) */
+        border-bottom: 1px solid #facc15;
+        padding: 0; /* 가로 여백 제거 */
+        border-radius: 0; 
+    }
+    
+    .auth-card .card-body {
+        background-color: #ffffff; /* 내용 영역 배경 (흰색) */
+        padding: 1.25rem; /* 카드 본문에는 패딩 다시 적용 */
+    }
+
+    .nav-tabs {
+        border-bottom: none;
+    }
+    
+    .nav-tabs .nav-item {
+        flex: 1 1 auto; /* 50%씩 차지 */
+        text-align: center; /* 텍스트 중앙 정렬 */
+    }
+
+    /*
+      비활성 탭: 배경 연한 주황색
+    */
+    .nav-tabs .nav-link:not(.active) {
+        font-weight: bold;
+        color: #a16207;
+        background-color: #fff8db; /* 비활성 탭 (연한 주황) */
+        border: 1px solid #facc15;
+        border-bottom: 1px solid #facc15;
+        
+        /* 탭 사이의 경계선 */
+        border-right: 1px solid #facc15;
+    }
+
+    /*
+      활성 탭: 배경 흰색
+    */
+    .nav-tabs .nav-link.active {
+        font-weight: bold;
+        color: #422006;
+        background-color: #ffffff; /* 활성 탭 (흰색) */
+        border: 1px solid #facc15;
+        border-bottom-color: #ffffff; 
+        margin-bottom: -1px; /* 헤더의 하단 테두리 위로 1px 올림 */
+        
+        /* 탭 사이의 경계선 */
+        border-right: 1px solid #facc15;
+    }
+    
+    .nav-tabs .nav-item:last-child .nav-link {
+        border-right: none;
+    }
+    
+    /* === 폼 컨트롤 (입력창) === */
+    .form-control {
+        background: #ffffff; /* 입력창 배경 (흰색) */
+        border-color: #facc15; 
+        color: #374151;
+        transition: border-color 0.2s;
+    }
+    .form-control::placeholder {
+        color: #a16207;
+    }
+    .form-control:focus {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.25);
+        border-color: #f59e0b;
+    }
+    
+    /* === 버튼 === */
+    .btn-primary {
+         background-color: #f59e0b;
+         border-color: #f59e0b;
+         color: #ffffff;
+    }
+    .btn-primary:hover {
+         background-color: #d97706;
+         border-color: #d97706;
+    }
+
+    /* 중복확인 버튼 스타일 */
+    #check-email-btn {
+        background-color: #ffffff; /* 흰색 배경 */
+        border: 1px solid #f59e0b; /* 주황색 테두리 */
+        color: #f59e0b;       /* 주황색 텍스트 */
+        font-weight: 500;
+        transition: all 0.2s; 
+    }
+    #check-email-btn:hover {
+        background-color: #fff8db; /* 연한 주황색 호버 */
+        color: #d97706;
+        border-color: #d97706;
+    }
+
+
+    /* === 폼 내부 아이콘/텍스트 === */
+    .position-relative { position: relative; }
+    .btn-clear-input, .btn-toggle-password {
+        position: absolute;
+        top: 50%;
+        right: 10px;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 0.25rem;
+        line-height: 1;
+        color: #a16207;
+    }
+    .text-muted {
+        color: #a16207 !important;
+    }
+    .error-message {
+        color: #dc3545;
+        font-size: 0.8rem;
+        height: 1rem;
+        margin-top: 0.25rem;
+    }
+    .conditions-box {
+        font-size: 0.8rem;
+        color: #a16207;
+        margin-top: 0.5rem;
+        padding-left: 0.25rem;
+        display: none;
+    }
+    .conditions-box p {
+        margin: 0.1rem 0;
+    }
+    .conditions-box p.valid {
+        color: #28a745;
+    }
+</style>
 </head>
 <body>
 

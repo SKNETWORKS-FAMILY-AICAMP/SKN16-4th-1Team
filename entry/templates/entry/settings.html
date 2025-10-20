@@ -5,7 +5,11 @@
     <h1 class="section-title">⚙️ 환경설정</h1>
     <div class="info-group">
         <h2>테마 선택</h2>
-        <select id="theme-select" class="form-select"><option value="light">라이트 모드</option><option value="dark">다크 모드</option></select>
+        <select id="theme-select" class="form-select">
+            <option value="classic">기본</option>
+            <option value="light">라이트</option>
+            <option value="dark">다크</option>
+        </select>
     </div>
     <div class="info-group">
         <h2>언어 선택</h2>
@@ -36,11 +40,17 @@ document.addEventListener('DOMContentLoaded', function() {
         localStorage.setItem('language', languageSelect.value);
         localStorage.setItem('notifications', notificationToggle.checked);
 
+        // 1. html 태그에서 'dark'와 'classic' 클래스를 모두 제거
+        document.documentElement.classList.remove('dark', 'classic');
+        
+        // 2. 선택한 테마에 맞는 클래스만 추가
         if (theme === 'dark') {
             document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
+        } else if (theme === 'classic') {
+            document.documentElement.classList.add('classic');
         }
+        // 'light' 테마는 아무 클래스도 추가하지 않으면 됩니다.
+
         alert('설정이 저장되었습니다.');
     });
 
