@@ -292,9 +292,9 @@
 
     .content-wrapper {
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: 1fr 1fr 320px; /* left: form, middle: preview, right: ui-only cards */
         gap: 2rem;
-        align-items: stretch;
+        align-items: start;
     }
 
     /* === 왼쪽 패널 (일기 입력) === */
@@ -525,6 +525,121 @@
         text-align: center;
     }
 
+    /* === 우측 UI 카드 컬럼 === */
+    .ui-cards-column {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .ui-card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.75rem;
+        padding: 1rem;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    }
+    html.dark .ui-card {
+        background: #1f2937;
+        border-color: #374151;
+        color: #d1d5db;
+    }
+
+    .ui-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 0.75rem;
+        font-weight: 700;
+        color: #111827;
+    }
+    html.dark .ui-card-header { color: #f9fafb; }
+
+    .ui-badge {
+        font-size: 0.75rem;
+        padding: 0.125rem 0.5rem;
+        background: #eef2ff;
+        color: #4f46e5;
+        border-radius: 9999px;
+        border: 1px solid #e0e7ff;
+    }
+    html.dark .ui-badge { background:#312e81; color:#c7d2fe; border-color:#4338ca; }
+
+    .segmented {
+        display: grid;
+        grid-template-columns: repeat(3, auto);
+        gap: 0.5rem;
+        margin-right: 0.5rem;
+    }
+
+    .chip, .pill-btn {
+        padding: 0.4rem 0.7rem;
+        border-radius: 9999px;
+        border: 1px solid #e5e7eb;
+        background: #ffffff;
+        color: #374151;
+        font-size: 0.85rem;
+        cursor: default;
+        user-select: none;
+    }
+    .chip:disabled, .pill-btn:disabled { opacity: 0.7; }
+    html.dark .chip, html.dark .pill-btn { background:#374151; border-color:#4b5563; color:#d1d5db; }
+
+    .preset-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+    }
+
+    .checkbox-list { display: grid; gap: 0.5rem; }
+    .checkbox-item { display: flex; align-items: center; gap: 0.5rem; color:#374151; }
+    html.dark .checkbox-item { color:#d1d5db; }
+
+    .see-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0.4rem 0.8rem;
+        border-radius: 0.5rem;
+        border: 1px solid #e5e7eb;
+        background: #ffffff;
+        color: #6b7280;
+        font-weight: 600;
+    }
+    html.dark .see-btn { background:#374151; border-color:#4b5563; color:#9ca3af; }
+
+    /* === 테마 스위처 (헤더 우측) === */
+    .theme-switch {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .theme-chip {
+        padding: 0.25rem 0.6rem;
+        border-radius: 9999px;
+        border: 1px solid #e5e7eb;
+        background: #ffffff;
+        color: #374151;
+        font-size: 0.8rem;
+        cursor: pointer;
+    }
+    .theme-chip.active { background:#111827; color:#fff; border-color:#111827; }
+    html.dark .theme-chip { background:#374151; border-color:#4b5563; color:#d1d5db; }
+
+    /* === 기본(클래식) 테마: 은은한 노란색 톤 === */
+    html.classic .main-body { background-color: #fef3c7; }
+    html.classic .diary-input-panel,
+    html.classic .preview-panel,
+    html.classic .ui-card { background-color: #fff8db; border-color:#facc15; }
+    html.classic .form-control { background:#fff1b8; border-color:#facc15; }
+    html.classic .form-control:focus { box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.25); border-color:#f59e0b; }
+    html.classic .theme-btn.active { background:#f59e0b; border-color:#f59e0b; }
+    html.classic #preview-placeholder { color:#a16207; }
+    html.classic .btn-primary { background:#f59e0b; }
+    html.classic .btn-primary:hover { background:#d97706; }
+    html.classic #regenerate-btn { background:#fff; border-color:#facc15; }
+    html.classic #save-btn { background:#f59e0b; }
+
     .progress {
         height: 8px;
         background-color: #e5e7eb;
@@ -662,6 +777,12 @@
     <header class="top-header">
         <h1 class="header-title">일기툰</h1>
         <div class="header-right">
+            <!-- 테마 스위처: 라이트 / 다크 / 기본(노란색) -->
+            <div class="theme-switch" id="theme-switch">
+                <button type="button" class="theme-chip" data-theme="light">라이트</button>
+                <button type="button" class="theme-chip" data-theme="dark">다크</button>
+                <button type="button" class="theme-chip" data-theme="classic">기본</button>
+            </div>
             <button id="sidebar-toggle" class="sidebar-toggle-button">
                 <span></span>
                 <span></span>
@@ -709,17 +830,6 @@
 
     <!-- 메인 컨텐츠 -->
     <main class="main-content">
-        <!-- Django 메시지 표시 -->
-        {% if messages %}
-            <div class="messages-container" style="margin-bottom: 1rem;">
-                {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }}" style="padding: 1rem; border-radius: 0.5rem; margin-bottom: 0.5rem; background-color: {% if message.tags == 'error' %}#fee2e2{% else %}#dbeafe{% endif %}; color: {% if message.tags == 'error' %}#991b1b{% else %}#1e40af{% endif %}; border: 1px solid {% if message.tags == 'error' %}#fecaca{% else %}#bfdbfe{% endif %};">
-                        {{ message }}
-                    </div>
-                {% endfor %}
-            </div>
-        {% endif %}
-
         <div class="content-wrapper">
             <!-- 왼쪽: 일기 입력 -->
             <div class="diary-input-panel">
@@ -795,6 +905,57 @@
                     <a id="detail-link" class="disabled" href="#" tabindex="-1" aria-disabled="true">저장 확인</a>
                 </div>
             </div>
+
+            <!-- 가장 오른쪽: 미구현 기능 UI 카드 -->
+            <aside class="ui-cards-column" aria-label="UI-only options">
+                <!-- 스타일 프리셋 -->
+                <section class="ui-card">
+                    <div class="ui-card-header">
+                        <span>스타일 프리셋</span>
+                        <span class="ui-badge">UI만</span>
+                    </div>
+                    <div class="preset-grid">
+                        <button class="pill-btn" type="button" disabled>하찮은</button>
+                        <button class="pill-btn" type="button" disabled>웹툰풍</button>
+                        <button class="pill-btn" type="button" disabled>수채화</button>
+                        <button class="pill-btn" type="button" disabled>연필스케치</button>
+                    </div>
+                </section>
+
+                <!-- 캐릭터 테마 -->
+                <section class="ui-card">
+                    <div class="ui-card-header">
+                        <span>캐릭터 테마</span>
+                        <span class="ui-badge">토끼/곰/악어</span>
+                    </div>
+                    <div class="preset-grid" style="grid-template-columns: repeat(3, 1fr);">
+                        <button class="pill-btn" type="button" disabled>토끼</button>
+                        <button class="pill-btn" type="button" disabled>곰</button>
+                        <button class="pill-btn" type="button" disabled>악어</button>
+                    </div>
+                </section>
+
+                <!-- 고급 설정 -->
+                <section class="ui-card">
+                    <div class="ui-card-header">
+                        <span>고급 설정</span>
+                        <span class="ui-badge">비활성</span>
+                    </div>
+                    <div class="checkbox-list">
+                        <label class="checkbox-item"><input type="checkbox" disabled> 컷별 감정 강조</label>
+                        <label class="checkbox-item"><input type="checkbox" disabled> 자막 자동 생성</label>
+                        <label class="checkbox-item"><input type="checkbox" disabled> 색상 톤 강화</label>
+                    </div>
+                </section>
+
+                <!-- 최근 2x2 이미지 보기 -->
+                <section class="ui-card">
+                    <div class="ui-card-header">
+                        <span>최근 2x2 이미지 보기</span>
+                    </div>
+                    <button class="see-btn" type="button" disabled>보기</button>
+                </section>
+            </aside>
         </div>
     </main>
 </div>
@@ -811,6 +972,7 @@
         const dateDisplayText = document.getElementById('date-display-text');
         const calendarToggleMain = document.getElementById('calendar-toggle-main');
         const calendarModalMain = document.getElementById('calendar-modal-main');
+        const themeSwitchEl = document.getElementById('theme-switch');
 
         // --- 이탈 방지 기능 ---
         const diaryContentEl = document.getElementById('diary-content');
@@ -1194,6 +1356,36 @@
                 selectedThemeInput.value = btn.dataset.theme;
             });
         });
+
+        // === 테마 스위처 ===
+        function applyTheme(theme) {
+            // reset
+            document.documentElement.classList.remove('dark');
+            document.documentElement.classList.remove('classic');
+            if (theme === 'dark') document.documentElement.classList.add('dark');
+            if (theme === 'classic') document.documentElement.classList.add('classic');
+
+            // update chips
+            if (themeSwitchEl) {
+                const chips = themeSwitchEl.querySelectorAll('.theme-chip');
+                chips.forEach(c => c.classList.toggle('active', c.dataset.theme === theme));
+            }
+        }
+
+        // init current theme
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        applyTheme(savedTheme);
+
+        // bind switch events
+        if (themeSwitchEl) {
+            themeSwitchEl.addEventListener('click', (e) => {
+                const btn = e.target.closest('.theme-chip');
+                if (!btn) return;
+                const t = btn.dataset.theme;
+                localStorage.setItem('theme', t);
+                applyTheme(t);
+            });
+        }
 
         // === 초기화 ===
         loadDiaryDates(); // 일기 날짜 목록 로드

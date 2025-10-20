@@ -54,6 +54,17 @@
         html.dark .text-muted {
             color: #9ca3af !important;
         }
+
+        /* 기본(클래식) 테마 - 은은한 노랑톤 */
+        html.classic body {
+            background-color: #fef3c7;
+            color: #374151;
+        }
+        html.classic .bg-light { background-color: #fff8db !important; }
+        html.classic .jumbotron { background-color: #fff8db; }
+        html.classic .card { background-color: #fff8db; color: #374151; border-color: #facc15; }
+        html.classic .card-title, html.classic .card-subtitle { color: #111827 !important; }
+        html.classic .text-muted { color: #a16207 !important; }
     </style>
 
     <script>
@@ -62,6 +73,8 @@
             const theme = localStorage.getItem('theme');
             if (theme === 'dark') {
                 document.documentElement.classList.add('dark');
+            } else if (theme === 'classic') {
+                document.documentElement.classList.add('classic');
             }
         })();
     </script>
