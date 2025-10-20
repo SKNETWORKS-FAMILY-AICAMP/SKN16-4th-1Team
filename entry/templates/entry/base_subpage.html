@@ -1,0 +1,88 @@
+{% load static %}
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <title>{% block title %}일기툰{% endblock %}</title>
+    <style>
+        /* 기본 스타일 */
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; background-color: #f3f4f6; margin: 0; }
+        .main-body { align-items: flex-start; }
+        /* 서브 페이지용 헤더 */
+        .page-header { width: 100%; background-color: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 50; }
+        .logo-link { display: block; max-width: 1280px; margin: 0 auto; padding: 0.75rem 1.5rem; font-size: 1.5rem; font-weight: bold; color: #0ea5e9; text-decoration: none; }
+        /* 메인 컨텐츠 */
+        .main-content { width: 100%; padding: 2rem 1rem; }
+        .content-wrapper-center { width: 100%; max-width: 48rem; margin: 0 auto; }
+        /* 내 정보 & 환경설정 공통 스타일 */
+        .profile-section { background-color: white; padding: 2rem; border-radius: 0.5rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        .section-title { font-size: 1.875rem; font-weight: bold; margin-bottom: 2rem; color: #1f2937; }
+        .info-group { margin-bottom: 2.5rem; }
+        .info-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; margin-bottom: 1rem; }
+        .info-group h2 { font-size: 1.25rem; font-weight: 600; margin: 0; }
+        .info-content .info-row { display: flex; align-items: center; min-height: 40px; margin-bottom: 1rem; }
+        .info-content .info-label { width: 7rem; font-weight: bold; flex-shrink: 0; }
+        .info-content .info-value { color: #374151; }
+        .info-content input { border: none; border-bottom: 2px solid #e5e7eb; padding: 0.25rem; width: 100%; font-size: 1rem; }
+        .info-content input:focus { outline: none; border-bottom-color: #0ea5e9; }
+        .btn-text { font-size: 0.875rem; color: #0ea5e9; background: none; border: none; cursor: pointer; }
+        .btn-text:hover { text-decoration: underline; }
+        .verification-box { margin: 1.5rem 0; padding: 1.5rem; background-color: #f9fafb; border-radius: 0.5rem; border: 1px solid #e5e7eb; }
+        .verification-box > p { text-align: center; font-weight: 600; margin-top: 0; margin-bottom: 1rem; }
+        .btn-submit { width: 100%; background-color: #0ea5e9; color: white; font-weight: bold; padding: 0.5rem; border: none; border-radius: 0.5rem; cursor: pointer; }
+        .btn-secondary { background-color: #e5e7eb; color: #1f2937; font-weight: 600; padding: 0.5rem 1rem; border: none; border-radius: 0.5rem; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; }
+        /* 추가된 스타일 */
+        .profile-image-area { display: flex; flex-direction: column; align-items: center; margin-bottom: 2.5rem; }
+        .profile-image-wrapper { width: 8rem; height: 8rem; border-radius: 9999px; background-color: #e5e7eb; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; overflow: hidden; }
+        .profile-image-wrapper i { width: 5rem; height: 5rem; color: #9ca3af; }
+        .profile-image-wrapper img { width: 100%; height: 100%; object-fit: cover; }
+        .profile-buttons { display: flex; gap: 0.5rem; }
+        .progress-bar-area { display: flex; align-items: center; gap: 1rem; }
+        .progress-bar { width: 100%; background-color: #e5e7eb; height: 1rem; border-radius: 9999px; overflow: hidden; }
+        .progress-fill { background-color: #0ea5e9; height: 100%; border-radius: 9999px; transition: width 0.5s ease-in-out; }
+        .danger-zone-title { color: #dc2626; }
+        .btn-danger-text { color: #dc2626; background: none; border: none; cursor: pointer; }
+        .btn-danger-text:hover { text-decoration: underline; }
+        .form-select { width: 100%; border: 1px solid #d1d5db; border-radius: 0.5rem; padding: 0.75rem 1rem; font-size: 1rem; cursor: pointer; }
+        .switch { position: relative; display: inline-block; width: 60px; height: 34px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; }
+        .slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; }
+        input:checked + .slider { background-color: #0ea5e9; }
+        input:checked + .slider:before { transform: translateX(26px); }
+        .slider.round { border-radius: 34px; }
+        .slider.round:before { border-radius: 50%; }
+        /* 다크 모드 스타일 추가 */
+        html.dark body { background-color: #111827; }
+        html.dark .page-header { background-color: #1f2937; }
+        html.dark .profile-section { background-color: #374151; color: #d1d5db; }
+        html.dark .section-title, html.dark .info-group h2 { color: #f9fafb; }
+        html.dark .info-value, html.dark .profile-buttons button { color: #d1d5db; }
+        html.dark .progress-bar { background-color: #4b5563; }
+        html.dark .form-select { background-color: #4b5563; color: #f9fafb; border-color: #6b7280; }
+    </style>
+    <script>
+        (function() {
+            const theme = localStorage.getItem('theme');
+            if (theme === 'dark') {
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+</head>
+<body class="main-body">
+    <header class="page-header">
+        <a href="{% url 'entry' %}" class="logo-link">일기툰</a>
+    </header>
+    <main class="main-content">
+        <div class="content-wrapper-center">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

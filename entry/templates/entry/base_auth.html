@@ -1,0 +1,213 @@
+{% load static %}
+<!doctype html>
+<html lang="ko">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    
+    <link href="https://fonts.googleapis.com/css?family=Vollkorn&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <script src="https://unpkg.com/lucide@latest"></script> <title>{% block title %}일기툰{% endblock %}</title>
+    <style>
+        /* Bootstrap을 기반으로 한 최소한의 추가 스타일 */
+        body { 
+            font-family: 'Vollkorn', serif; 
+            background-color: #f8f9fa;
+            display: flex;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .auth-card {
+            max-width: 450px;
+            margin: 2rem auto;
+            border: none;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        .nav-tabs .nav-link {
+            font-weight: bold;
+            color: #6c757d;
+        }
+        .nav-tabs .nav-link.active {
+            color: #007bff;
+            border-color: #dee2e6 #dee2e6 #fff;
+        }
+        .error-message {
+            color: #dc3545; /* Bootstrap danger color */
+            font-size: 0.8rem;
+            height: 1rem;
+            margin-top: 0.25rem;
+        }
+        .conditions-box {
+            font-size: 0.8rem;
+            color: #6c757d;
+            margin-top: 0.5rem;
+            padding-left: 0.25rem;
+            display: none; /* JS로 제어 */
+        }
+        .conditions-box p {
+            margin: 0.1rem 0;
+        }
+        .conditions-box p.valid {
+            color: #28a745; /* Bootstrap success color */
+        }
+        /* 로그인 페이지 아이콘 버튼 스타일 */
+        .position-relative { position: relative; }
+        .btn-clear-input, .btn-toggle-password {
+            position: absolute;
+            top: 50%;
+            right: 10px;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #adb5bd;
+            padding: 0.25rem;
+            line-height: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // =============================================
+            //           로그인 페이지 스크립트
+            // =============================================
+            const loginForm = document.getElementById('login-form');
+            if (loginForm) {
+                const emailInput = document.getElementById('email');
+                const passwordInput = document.getElementById('password');
+                const clearEmailBtn = document.getElementById('clear-email');
+                const togglePasswordBtn = document.getElementById('toggle-password');
+
+                emailInput.addEventListener('input', function() {
+                    clearEmailBtn.style.display = emailInput.value.length > 0 ? 'block' : 'none';
+                });
+                clearEmailBtn.addEventListener('click', function() {
+                    emailInput.value = '';
+                    clearEmailBtn.style.display = 'none';
+                    emailInput.focus();
+                });
+                passwordInput.addEventListener('input', function() {
+                    togglePasswordBtn.style.display = passwordInput.value.length > 0 ? 'block' : 'none';
+                });
+                togglePasswordBtn.addEventListener('click', function() {
+                    const icon = togglePasswordBtn.querySelector('i');
+                    if (passwordInput.type === 'password') {
+                        passwordInput.type = 'text';
+                        icon.setAttribute('data-lucide', 'eye-off');
+                    } else {
+                        passwordInput.type = 'password';
+                        icon.setAttribute('data-lucide', 'eye');
+                    }
+                    lucide.createIcons();
+                });
+            }
+
+            // =============================================
+            //         회원가입 페이지 스크립트
+            // =============================================
+            const signupForm = document.getElementById('signup-form');
+            if (signupForm) {
+                let isEmailVerified = false;
+                const emailInput = document.getElementById('signup-email');
+                const checkEmailBtn = document.getElementById('check-email-btn');
+                const passwordInput = document.getElementById('signup-password');
+                const passwordConfirmInput = document.getElementById('signup-password-confirm');
+                const passwordConditions = document.getElementById('password-conditions');
+                const emailError = document.getElementById('signup-email-error');
+                const passwordConfirmError = document.getElementById('signup-password-confirm-error');
+
+                emailInput.addEventListener('input', () => { isEmailVerified = false; });
+
+                checkEmailBtn.addEventListener('click', function() {
+                    const email = emailInput.value;
+                    emailError.textContent = '';
+                    const DUPLICATE_EMAIL = 'admin@test.com';
+
+                    if (email === DUPLICATE_EMAIL) {
+                        emailError.textContent = '이미 사용 중인 이메일입니다.';
+                        isEmailVerified = false;
+                    } else if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) {
+                        emailError.textContent = '이메일 형식이 올바르지 않습니다.';
+                        isEmailVerified = false;
+                    } else {
+                        alert('사용 가능한 이메일입니다.');
+                        isEmailVerified = true;
+                    }
+                });
+                
+                if (passwordInput && passwordConditions) {
+                    passwordInput.addEventListener('focus', () => { passwordConditions.style.display = 'block'; });
+                    passwordInput.addEventListener('blur', () => { passwordConditions.style.display = 'none'; });
+                }
+                
+                const validatePasswordConditions = () => {
+                    if (!passwordInput || !passwordConditions) return;
+                    const password = passwordInput.value;
+                    const email = emailInput.value;
+                    const setValidity = (condition, isValid) => {
+                        const el = passwordConditions.querySelector(`p[data-condition="${condition}"]`);
+                        if(el) el.classList.toggle('valid', isValid);
+                    };
+                    setValidity('length', password.length >= 8 && password.length <= 20);
+                    setValidity('combination', /(?=.*[a-zA-Z])(?=.*\d)|(?=.*[a-zA-Z])(?=.*[!@#$%^&*])|(?=.*\d)(?=.*[!@#$%^&*])/.test(password));
+                    setValidity('noKorean', !/[ㄱ-ㅎ|ㅏ-ㅣ|가-힣]/.test(password));
+                    setValidity('consecutive', !/(\w)\1\1/.test(password));
+                    const userId = email ? email.split('@')[0] : '';
+                    setValidity('includesEmail', userId ? !password.includes(userId) : true);
+                };
+
+                if (passwordInput) passwordInput.addEventListener('input', validatePasswordConditions);
+                if (emailInput) emailInput.addEventListener('input', validatePasswordConditions);
+
+                if (passwordConfirmInput) {
+                    passwordConfirmInput.addEventListener('input', () => {
+                        if (passwordConfirmInput.value) {
+                           if (passwordInput.value === passwordConfirmInput.value) {
+                                passwordConfirmError.textContent = '비밀번호가 일치합니다.';
+                                passwordConfirmError.style.color = '#28a745';
+                            } else {
+                                passwordConfirmError.textContent = '비밀번호가 일치하지 않습니다.';
+                                passwordConfirmError.style.color = '#dc3545';
+                            }
+                        } else {
+                           passwordConfirmError.textContent = '';
+                        }
+                    });
+                }
+
+                signupForm.addEventListener('submit', function(event) {
+                    const allPasswordConditionsValid = passwordConditions ? passwordConditions.querySelectorAll('p.valid').length === 5 : true;
+                    const passwordsMatch = passwordInput.value === passwordConfirmInput.value;
+                    if (!isEmailVerified) {
+                        event.preventDefault();
+                        emailError.textContent = '이메일 중복 확인을 해주세요.';
+                        return;
+                    }
+                    if (!allPasswordConditionsValid) {
+                        event.preventDefault();
+                        alert('비밀번호 조건을 모두 만족해야 합니다.');
+                        return;
+                    }
+                    if (!passwordsMatch) {
+                        event.preventDefault();
+                        alert('비밀번호가 일치하지 않습니다.');
+                        return;
+                    }
+                });
+            }
+        });
+        // 아이콘을 그려주는 함수
+        lucide.createIcons();
+    </script>
+</body>
+</html>
