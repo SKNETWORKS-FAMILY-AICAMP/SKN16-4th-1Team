@@ -18,61 +18,82 @@ def entry(request):
     form = AddForm(request.POST or None)
 
     if request.method == 'POST':
+        print(f"[ENTRY] POST 요청 받음")
+        print(f"[ENTRY] POST 데이터: {request.POST}")
+
         if form.is_valid():
-            note = request.POST['note']
-            content = request.POST['content']
-            selected_date = request.POST.get('selected_date', None)
-            if selected_date:
-                # 날짜 문자열을 datetime으로 변환
-                posted_date = datetime.strptime(selected_date, '%Y-%m-%d')
-            else:
-                # 날짜 선택 안 했으면 오늘
-                posted_date = datetime.now()
-                
-            productivity = request.POST['productivity']
+            try:
+                note = request.POST['note']
+                content = request.POST['content']
+                selected_date = request.POST.get('selected_date', None)
 
-            image_url = request.POST.get('image_url', '').strip()
+                print(f"[ENTRY] 제목: {note}")
+                print(f"[ENTRY] 내용 길이: {len(content)}")
+                print(f"[ENTRY] 선택된 날짜: {selected_date}")
 
-            # ✅ 같은 날짜의 일기가 있는지 확인
-            today_date = posted_date.date()
-            existing_diary = DiaryModel.objects.filter(
-                author=request.user,
-                posted_date__date=today_date
-            ).first()
+                if selected_date:
+                    # 날짜 문자열을 datetime으로 변환
+                    posted_date = datetime.strptime(selected_date, '%Y-%m-%d')
+                else:
+                    # 날짜 선택 안 했으면 오늘
+                    posted_date = datetime.now()
 
-            if existing_diary:
-                # 기존 일기 수정
-                existing_diary.note = note
-                existing_diary.content = content
-                existing_diary.productivity = productivity
-                if image_url:
-                    existing_diary.image_url = image_url
-                existing_diary.save()
-                todays_diary = existing_diary
-            else:
-                # 새 일기 생성
-                todays_diary = DiaryModel()
-                todays_diary.author = request.user
-                todays_diary.note = note
-                todays_diary.posted_date = posted_date
-                todays_diary.content = content
-                todays_diary.productivity = productivity
-                if image_url:
-                    todays_diary.image_url = image_url
-                todays_diary.save()
+                productivity = int(request.POST.get('productivity', 5))
 
-            form = AddForm()
-            return render(
-                request,
-                'entry/add.html',
-                {
-                    'title': 'Add Entry',
-                    'subtitle': "Add what you feel and we'll store it for you.",
-                    'add_highlight': True,
-                    'addform': form,
-                    'new_diary_id': todays_diary.id,
-                }
-            )
+                image_url = request.POST.get('image_url', '').strip()
+
+                # ✅ 같은 날짜의 일기가 있는지 확인
+                today_date = posted_date.date()
+                existing_diary = DiaryModel.objects.filter(
+                    author=request.user,
+                    posted_date__date=today_date
+                ).first()
+
+                if existing_diary:
+                    # 기존 일기 수정
+                    print(f"[ENTRY] 기존 일기 수정 (ID: {existing_diary.id})")
+                    existing_diary.note = note
+                    existing_diary.content = content
+                    existing_diary.productivity = productivity
+                    if image_url:
+                        existing_diary.image_url = image_url
+                    existing_diary.save()
+                    todays_diary = existing_diary
+                else:
+                    # 새 일기 생성
+                    print(f"[ENTRY] 새 일기 생성")
+                    todays_diary = DiaryModel()
+                    todays_diary.author = request.user
+                    todays_diary.note = note
+                    todays_diary.posted_date = posted_date
+                    todays_diary.content = content
+                    todays_diary.productivity = productivity
+                    if image_url:
+                        todays_diary.image_url = image_url
+                    todays_diary.save()
+                    print(f"[ENTRY] ✅ 일기 생성 완료 (ID: {todays_diary.id})")
+
+                form = AddForm()
+                return render(
+                    request,
+                    'entry/add.html',
+                    {
+                        'title': 'Add Entry',
+                        'subtitle': "Add what you feel and we'll store it for you.",
+                        'add_highlight': True,
+                        'addform': form,
+                        'new_diary_id': todays_diary.id,
+                    }
+                )
+            except Exception as e:
+                print(f"[ENTRY] ❌ 오류 발생: {str(e)}")
+                import traceback
+                traceback.print_exc()
+                messages.error(request, f'일기 저장 중 오류가 발생했습니다: {str(e)}')
+        else:
+            print(f"[ENTRY] ❌ 폼 유효성 검사 실패")
+            print(f"[ENTRY] 폼 에러: {form.errors}")
+            messages.error(request, f'입력값을 확인해주세요: {form.errors}')
 
     return render(
         request,
