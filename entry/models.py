@@ -12,6 +12,10 @@ class DiaryModel(models.Model):
     productivity = models.IntegerField()
     image_url = models.URLField(max_length=500, blank=True, null=True, verbose_name='Diary Image')
     temp_image_url = models.URLField(max_length=500, blank=True, null=True, verbose_name='temp_Image')
+    # 사용자가 선택한 스타일(simple/ani/real)을 저장
+    style = models.CharField(max_length=20, blank=True, null=True)
+    # 이미지 생성을 위해 최종적으로 사용된 프롬프트 텍스트 저장
+    final_prompt = models.TextField(blank=True, null=True)
 
 
     def date_for_chart(self):

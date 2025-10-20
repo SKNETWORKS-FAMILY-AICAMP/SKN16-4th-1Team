@@ -179,8 +179,13 @@ DIARY:
 
 
 def _render_prompt(style_template: str, panels: List[Dict[str, Any]]) -> str:
-    """스타일+레이아웃 고정으로 템플릿화하고, 패널 4개만 주입."""
-    header = _doodle_global_style_block() + "\n" + _force_2x2_layout_block() + "\n"
+    """선택된 스타일 템플릿과 4패널 데이터를 결합해 최종 프롬프트를 생성."""
+    style_template = (style_template or "").strip()
+    # 스타일 템플릿이 주어지면 그대로 사용, 없으면 기본 '하찮은 그림' 스타일과 2x2 레이아웃 사용
+    if style_template:
+        header = style_template.rstrip() + "\n\n"
+    else:
+        header = _doodle_global_style_block() + "\n" + _force_2x2_layout_block() + "\n\n"
 
     def ptext(idx: int, p: Dict[str, Any]) -> str:
         scene = (p.get("scene") or "").strip()
@@ -213,7 +218,7 @@ def build_prompt_from_diary(diary_text: str, style_template: str, language: str 
     """
     _ensure_env_loaded()
     panels = _outline_diary_into_4_panels(diary_text, language=language)
-    prompt = _render_prompt(style_template="", panels=panels)
+    prompt = _render_prompt(style_template=style_template, panels=panels)
     return prompt
 
 
@@ -272,10 +277,16 @@ def generate_and_attach_image_to_diary(
     from entry.models import DiaryModel  # 지연 import
 
     diary = DiaryModel.objects.get(pk=diary_id)
-    # style 텍스트는 무시하고 내부 스타일 사용
     diary_text = f"Title: {diary.note}\nDate: {diary.posted_date}\n\n{diary.content}"
 
-    prompt = build_prompt_from_diary(diary_text, style_template="", language=language)
+    style_text = ""
+    try:
+        if style_path and Path(style_path).exists():
+            style_text = Path(style_path).read_text(encoding="utf-8")
+    except Exception:
+        style_text = ""
+
+    prompt = build_prompt_from_diary(diary_text, style_template=style_text, language=language)
 
     url, local_path = generate_image(prompt, size="1024x1024")
 
@@ -288,8 +299,9 @@ def generate_and_attach_image_to_diary(
             diary.temp_image_url = settings.MEDIA_URL.rstrip("/") + "/" + str(rel_path).replace("\\", "/")
         except Exception:
             diary.temp_image_url = str(local_path)
-
-    diary.save(update_fields=["temp_image_url"])
+    # 최종 프롬프트 저장
+    diary.final_prompt = prompt
+    diary.save(update_fields=["temp_image_url", "final_prompt"])
     return prompt, url, local_path
 
 
@@ -359,8 +371,13 @@ def run_sample(
     반환: (prompt_text, url, local_path)
     """
     diary_text = diary_path.read_text(encoding="utf-8")
-    # 내부 스타일을 쓰므로 style_text는 사용하지 않음
-    prompt = build_prompt_from_diary(diary_text, style_template="", language=language)
+    style_text = ""
+    try:
+        if style_path and Path(style_path).exists():
+            style_text = Path(style_path).read_text(encoding="utf-8")
+    except Exception:
+        style_text = ""
+    prompt = build_prompt_from_diary(diary_text, style_template=style_text, language=language)
     url, local_path = generate_image(prompt, size="1024x1024")
     return prompt, url, local_path
 

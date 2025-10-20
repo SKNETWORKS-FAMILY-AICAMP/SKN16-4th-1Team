@@ -39,6 +39,17 @@ def entry(request):
                     posted_date = datetime.now()
 
                 productivity = int(request.POST.get('productivity', 5))
+                # 사용자가 선택한 테마(스타일)
+                raw_theme = (request.POST.get('theme') or '').strip()
+                theme_map = {
+                    'Theme1': 'simple',
+                    'Theme2': 'ani',
+                    'Theme3': 'real',
+                    'simple': 'simple',
+                    'ani': 'ani',
+                    'real': 'real',
+                }
+                selected_style = theme_map.get(raw_theme) if raw_theme else None
 
                 image_url = request.POST.get('image_url', '').strip()
 
@@ -55,6 +66,8 @@ def entry(request):
                     existing_diary.note = note
                     existing_diary.content = content
                     existing_diary.productivity = productivity
+                    if selected_style:
+                        existing_diary.style = selected_style
                     if image_url:
                         existing_diary.image_url = image_url
                     existing_diary.save()
@@ -68,6 +81,8 @@ def entry(request):
                     todays_diary.posted_date = posted_date
                     todays_diary.content = content
                     todays_diary.productivity = productivity
+                    if selected_style:
+                        todays_diary.style = selected_style
                     if image_url:
                         todays_diary.image_url = image_url
                     todays_diary.save()
@@ -247,11 +262,22 @@ def generate_image(request, diary_id):
 
     try:
         from .Image_making.pipeline import generate_and_attach_image_to_diary
+        from pathlib import Path
 
         # ✅ 자신의 일기만 처리
         diary = get_object_or_404(DiaryModel, pk=diary_id, author=request.user)
-        
-        generate_and_attach_image_to_diary(diary_id, language='en')
+        # 스타일 결정: 요청 파라미터 > 일기 저장된 스타일 > 기본(simple)
+        raw_style = (request.POST.get('style') or '').strip().lower()
+        style = raw_style or (diary.style or 'simple')
+        base_dir = Path(__file__).resolve().parents[1]
+        style_map = {
+            'simple': base_dir / 'sample_prompt_simple.txt',
+            'ani': base_dir / 'sample_prompt_ani.txt',
+            'real': base_dir / 'sample_prompt_real.txt',
+        }
+        style_path = style_map.get(style, base_dir / 'sample_prompt_simple.txt')
+
+        generate_and_attach_image_to_diary(diary_id, style_path=style_path, language='en')
         diary.refresh_from_db()
         return JsonResponse({'status': 'ok', 'temp_image_url': diary.temp_image_url})
     except Exception as e:
