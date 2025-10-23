@@ -96,6 +96,7 @@ python manage.py runserver
 ----------------------------------------
 
 **주요 화면(이미지는 직접 추가 예정)**
+<img width="1899" height="906" alt="2025-10-20_151311" src="https://github.com/user-attachments/assets/28a3629f-f169-48a5-87fa-ef19d20c9f9c" />
 
 - 메인 작성 화면: 일기 작성, 테마/날짜 선택, 이미지 생성/저장
 - 목록 화면: 작성한 일기 카드 리스트
